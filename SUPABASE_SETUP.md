@@ -35,13 +35,20 @@ In the Supabase dashboard, open **SQL Editor** and run, in order:
 1. `supabase/migrations/0001_init.sql` — tables, seed houses, seed `app_config`.
 2. `supabase/migrations/0002_rls.sql` — role helpers, the `handle_new_user`
    trigger (auto-creates a `profiles` row on signup), and all RLS policies.
+3. `supabase/migrations/0003_registration_number.sql` through
+   `0005_sports_age_range.sql` — incremental schema tweaks.
+4. `supabase/migrations/0006_open_role_access.sql` — opens registrations,
+   staff_registrations, sports, results, injuries, and decisions up to any
+   signed-in role (not just staff/admin).
 
 (Or, with the Supabase CLI: `supabase link` then `supabase db push`.)
 
-**Review the RLS policies** in `0002_rls.sql` before relying on them — they mirror
-the old `firestore.rules`: signed-in users can read; only admins write
-registrations/staff/metrics/config; staff+admin write sports/results/injuries/
-decisions (with `createdBy`/`recordedBy` forced to the caller).
+**Review the RLS policies** before relying on them. As of `0006`, any signed-in
+user (`user`, `staff`, or `admin`) can read and write registrations, staff
+registrations, sports, results, injuries, and decisions (`createdBy`/
+`recordedBy` are still forced to the caller). Only `profiles` (role
+management), `houses`, and `app_config` stay admin-write-only — those back the
+admin-only `/admin`, `/admin/registrations`, and `/admin/settings` routes.
 
 ### Column naming note
 Domain columns are intentionally **camelCase** (e.g. `"houseKey"`,
