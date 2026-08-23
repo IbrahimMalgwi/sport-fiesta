@@ -1,19 +1,24 @@
 "use client";
-// app/(admin)/staff-registration/page.jsx — ported from src/pages/StaffRegistration.jsx
+// app/(member)/staff-registration/page.jsx — ported from src/pages/StaffRegistration.jsx
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { createClient } from "@/lib/supabase/client";
+import useConfig from "@/hooks/useConfig";
+import { resolveHouses, isPastCutoff } from "@/utils/config";
+import { HOUSE_KEYS } from "@/utils/houseMapping";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Field, Input, Select } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
 
 const DESIGNATION_OPTIONS = ["Counselor/Marshal", "Medic", "Media", "Sound", "Welfare", "Data", "Security", "Other"];
+const HOUSE_ASSIGNED_DESIGNATION = "Counselor/Marshal";
 
 export default function StaffRegistration() {
     const { currentUser } = useAuth();
     const router = useRouter();
     const supabase = createClient();
+    const { config } = useConfig();
 
     useEffect(() => {
         if (!currentUser) router.replace("/login");
@@ -24,6 +29,52 @@ export default function StaffRegistration() {
     const [success, setSuccess] = useState(null);
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
+    const [houseCounts, setHouseCounts] = useState({});
+
+    const houses = resolveHouses(config);
+
+    // Counselors/Marshals are balanced across houses independently of
+    // participants, so only tally other Counselor/Marshal registrants.
+    useEffect(() => {
+        let isMounted = true;
+        async function fetchHouseCounts() {
+            try {
+                const { data, error } = await supabase
+                    .from("staff_registrations")
+                    .select("houseKey")
+                    .eq("designation", HOUSE_ASSIGNED_DESIGNATION);
+                if (error) throw error;
+                if (!isMounted) return;
+
+                const counts = {};
+                HOUSE_KEYS.forEach((key) => { counts[key] = 0; });
+                (data || []).forEach((row) => {
+                    if (row.houseKey && counts.hasOwnProperty(row.houseKey)) counts[row.houseKey]++;
+                });
+                setHouseCounts(counts);
+            } catch (err) {
+                console.error("Error fetching staff house counts:", err);
+            }
+        }
+        fetchHouseCounts();
+        return () => { isMounted = false; };
+    }, [success]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Balanced min-count house assignment — same approach as participant
+    // registration (utils shared indirectly since the pool differs).
+    const assignHouse = () => {
+        if (Object.keys(houseCounts).length === 0) {
+            return houses[Math.floor(Math.random() * houses.length)];
+        }
+        let minCount = Infinity;
+        let candidateHouses = [];
+        houses.forEach((house) => {
+            const count = houseCounts[house.key] || 0;
+            if (count < minCount) { minCount = count; candidateHouses = [house]; }
+            else if (count === minCount) candidateHouses.push(house);
+        });
+        return candidateHouses[Math.floor(Math.random() * candidateHouses.length)];
+    };
 
     useEffect(() => {
         const savedDraft = localStorage.getItem("staffRegistrationDraft");
@@ -79,6 +130,10 @@ export default function StaffRegistration() {
         }
         setLoading(true);
         try {
+            const getsHouse = formData.designation === HOUSE_ASSIGNED_DESIGNATION;
+            const past = isPastCutoff(config);
+            const house = getsHouse && !past ? assignHouse() : null;
+
             const { error } = await supabase.from("staff_registrations").insert({
                 ...formData,
                 finalDesignation: formData.designation === "Other" ? formData.otherDesignation : formData.designation,
@@ -86,9 +141,19 @@ export default function StaffRegistration() {
                 submittedByUid: currentUser.uid,
                 submittedByEmail: currentUser.email,
                 submittedByName: currentUser.displayName || "Unknown",
+                houseKey: house ? house.key : null,
+                house: house ? house.name : null,
+                color: house ? house.color : null,
+                assigned: !!house,
             });
             if (error) throw error;
-            setSuccess({ name: formData.name, designation: formData.designation === "Other" ? formData.otherDesignation : formData.designation });
+            setSuccess({
+                name: formData.name,
+                designation: formData.designation === "Other" ? formData.otherDesignation : formData.designation,
+                house: house ? house.name : null,
+                houseColor: house ? house.color : null,
+                housePending: getsHouse && past,
+            });
             handleReset();
             setErrors({});
         } catch (error) {
@@ -206,6 +271,19 @@ export default function StaffRegistration() {
                             <div className="my-4 py-2 px-4 rounded-lg inline-block" style={{ backgroundColor: "#4f46e520" }}>
                                 <span className="font-bold text-lg" style={{ color: "#4f46e5" }}>{success.designation}</span>
                             </div>
+                            {success.house && (
+                                <div className="my-4">
+                                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Assigned to</p>
+                                    <div className="py-2 px-4 rounded-lg inline-block" style={{ backgroundColor: `${success.houseColor}20` }}>
+                                        <span className="font-bold text-lg" style={{ color: success.houseColor }}>{success.house}</span>
+                                    </div>
+                                </div>
+                            )}
+                            {success.housePending && (
+                                <div className="my-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-sm text-amber-700 dark:text-amber-300">
+                                    House assignment is closed (registration cutoff passed), so no house was assigned.
+                                </div>
+                            )}
                             <Button onClick={() => setSuccess(null)} className="mt-4">Continue</Button>
                         </div>
                     </div>
