@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import EditForm from "@/components/EditRegistrationForm";
 import EditStaffForm from "@/components/EditStaffForm";
 import { createClient } from "@/lib/supabase/client";
-import AdminRoute from "@/components/AdminRoute";
+import { STAFF_DESIGNATION_FILTERS } from "@/utils/roles";
 import useConfig from "@/hooks/useConfig";
 import { resolveHouses } from "@/utils/config";
 import { getHouseKeyByName } from "@/utils/houseMapping";
@@ -20,7 +20,6 @@ import { LoadingScreen } from "@/components/ui/Spinner";
 import { HouseBadge, Badge } from "@/components/ui/Badge";
 import { MobileCardRow, MobileCardField, MobileCardActions } from "@/components/ui/MobileCardList";
 
-const DESIGNATION_OPTIONS = ["Counselor/Marshal", "Medic", "Media", "Sound", "Welfare", "Data", "Security", "Other"];
 
 export default function RegistrationsManager() {
     const supabase = createClient();
@@ -216,15 +215,11 @@ export default function RegistrationsManager() {
     const loading = activeTab === "staff" ? loadingStaff : loadingRegistrations;
 
     if (loading) {
-        return (
-            <AdminRoute>
-                <LoadingScreen label={activeTab === "staff" ? "Loading staff registrations..." : "Loading registrations..."} />
-            </AdminRoute>
-        );
+        return <LoadingScreen label={activeTab === "staff" ? "Loading staff registrations..." : "Loading registrations..."} />;
     }
 
     return (
-        <AdminRoute>
+        <>
             <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-3 sm:p-4 md:p-8">
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-6">
@@ -344,7 +339,7 @@ export default function RegistrationsManager() {
                                 <select value={designationFilter} onChange={(e) => setDesignationFilter(e.target.value)}
                                     className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
                                     <option value="all">All designations</option>
-                                    {DESIGNATION_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                                    {STAFF_DESIGNATION_FILTERS.map((d) => <option key={d} value={d}>{d}</option>)}
                                 </select>
                             </div>
 
@@ -443,6 +438,6 @@ export default function RegistrationsManager() {
                     </div>
                 )}
             </div>
-        </AdminRoute>
+        </>
     );
 }

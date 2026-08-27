@@ -10,6 +10,7 @@ import { resolveHouses } from "@/utils/config";
 import { getHouseKeyByName } from "@/utils/houseMapping";
 import RegistrantPicker from "@/components/RegistrantPicker";
 import Button from "@/components/ui/Button";
+import { canRecordDecisions } from "@/utils/roles";
 
 // Counselors are staff (registered via /staff-registration, never house-
 // assigned) — not participants, so they're picked from staff_registrations
@@ -27,7 +28,7 @@ export default function DecisionsManager() {
     const { registrations } = useRegistrations();
     const { staffRegistrations } = useStaffRegistrations();
     const counselors = useMemo(
-        () => staffRegistrations.filter((s) => (s.finalDesignation || s.designation) === "Counselor/Marshal"),
+        () => staffRegistrations.filter((s) => ["Counsellor", "Counselor", "Counselor/Marshal"].includes(s.finalDesignation || s.designation)),
         [staffRegistrations]
     );
     const houses = resolveHouses(config);
@@ -100,7 +101,7 @@ export default function DecisionsManager() {
         return decisions.filter((d) => d.houseKey === houseFilter);
     }, [decisions, houseFilter]);
 
-    if (!["counsellor", "admin"].includes(userRole)) return <p className="p-8 text-center">Only Counsellors can record decisions for Christ.</p>;
+    if (!canRecordDecisions(userRole)) return <p className="p-8 text-center">Only Counsellors can record decisions for Christ.</p>;
     return (
         <div className="max-w-4xl mx-auto py-6 sm:py-8 px-3 sm:px-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6">Decisions for Christ</h1>

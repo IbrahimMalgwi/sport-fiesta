@@ -7,8 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Field, Input, Select } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
+import { STAFF_DESIGNATIONS } from "@/utils/roles";
 
-const DESIGNATION_OPTIONS = ["Counselor/Marshal", "Medic", "Media", "Sound", "Welfare", "Data", "Security", "Other"];
 
 export default function StaffRegistration() {
     const { currentUser } = useAuth();
@@ -32,7 +32,7 @@ export default function StaffRegistration() {
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (Object.keys(formData).some((key) => formData[key] !== "" && formData[key] !== [])) {
+            if (Object.values(formData).some((value) => Array.isArray(value) ? value.length > 0 : value !== "")) {
                 localStorage.setItem("staffRegistrationDraft", JSON.stringify(formData));
             }
         }, 5000);
@@ -171,7 +171,7 @@ export default function StaffRegistration() {
                                 <Select value={formData.designation} onChange={(e) => handleChange("designation", e.target.value)} onBlur={() => handleBlur("designation")}
                                     error={touched.designation && errors.designation}>
                                     <option value="">Select Designation</option>
-                                    {DESIGNATION_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
+                                    {STAFF_DESIGNATIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
                                 </Select>
                             </Field>
                             {formData.designation === "Other" && (

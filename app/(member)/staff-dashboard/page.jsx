@@ -2,6 +2,7 @@
 // app/(member)/staff-dashboard/page.jsx — ported from src/pages/StaffDashboard.jsx
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { STAFF_DESIGNATION_FILTERS } from "@/utils/roles";
 import { CSVLink } from "react-csv";
 import {
     Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, DoughnutController,
@@ -12,10 +13,10 @@ import { MobileCardRow, MobileCardField } from "@/components/ui/MobileCardList";
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, DoughnutController);
 
-const DESIGNATIONS = ["Counselor/Marshal", "Medic", "Media", "Sound", "Welfare", "Data", "Security", "Other"];
+const DESIGNATIONS = STAFF_DESIGNATION_FILTERS;
 
 const DESIGNATION_COLORS = {
-    "Counselor/Marshal": "#FF0000", "Medic": "#0000FF", "Media": "#800080", "Sound": "#FFD700",
+    "Counselor/Marshal": "#FF0000", "Marshal": "#ef4444", "Counsellor": "#f97316", "Medic": "#0000FF", "Media": "#800080", "Sound": "#FFD700",
     "Welfare": "#4f46e5", "Data": "#6366f1", "Security": "#10b981", "Other": "#6b7280",
 };
 

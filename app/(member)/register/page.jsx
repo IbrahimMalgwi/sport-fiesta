@@ -64,7 +64,7 @@ export default function RegistrationForm() {
     // Auto-save draft
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (Object.keys(formData).some((key) => formData[key] !== "" && formData[key] !== [])) {
+            if (Object.values(formData).some((value) => Array.isArray(value) ? value.length > 0 : value !== "")) {
                 localStorage.setItem("registrationDraft", JSON.stringify(formData));
             }
         }, 5000);
@@ -215,9 +215,7 @@ export default function RegistrationForm() {
                 assigned: !!house,
                 edition: currentEdition,
                 createdBy: currentUser?.uid,
-                fiestaAttendance: Array.isArray(formData.fiestaAttendance)
-                    ? [...formData.fiestaAttendance, currentEdition]
-                    : [currentEdition],
+                fiestaAttendance: [...new Set([...(Array.isArray(formData.fiestaAttendance) ? formData.fiestaAttendance : []), currentEdition])],
             }).select("reg_no").single();
             if (error) throw error;
 

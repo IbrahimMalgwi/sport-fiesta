@@ -3,10 +3,8 @@
 import React, { useState } from "react";
 import { Field, Input, Select } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
+import { STAFF_DESIGNATIONS } from "@/utils/roles";
 
-const DESIGNATION_OPTIONS = [
-    "Counselor/Marshal", "Medic", "Media", "Sound", "Welfare", "Data", "Security", "Other",
-];
 
 export default function EditStaffForm({ staffMember, onSave, onCancel }) {
     const [formData, setFormData] = useState({
@@ -78,7 +76,7 @@ export default function EditStaffForm({ staffMember, onSave, onCancel }) {
             <Field label="Designation" required error={errors.designation}>
                 <Select value={formData.designation} onChange={(e) => handleChange("designation", e.target.value)} error={errors.designation}>
                     <option value="">Select Designation</option>
-                    {DESIGNATION_OPTIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
+                    {STAFF_DESIGNATIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
                 </Select>
             </Field>
 

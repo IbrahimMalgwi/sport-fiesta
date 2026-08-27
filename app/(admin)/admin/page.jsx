@@ -4,7 +4,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import AdminRoute from "@/components/AdminRoute";
 import { LoadingScreen } from "@/components/ui/Spinner";
 import { MobileCardRow, MobileCardField, MobileCardActions } from "@/components/ui/MobileCardList";
 
@@ -110,15 +109,11 @@ export default function AdminPanel() {
     };
 
     if (loading) {
-        return (
-            <AdminRoute>
-                <LoadingScreen label="Loading admin panel..." />
-            </AdminRoute>
-        );
+        return <LoadingScreen label="Loading admin panel..." />;
     }
 
     return (
-        <AdminRoute>
+        <>
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
                 <div className="max-w-7xl mx-auto py-4 sm:py-6 px-3 sm:px-6 lg:px-8">
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6">Admin Panel</h1>
@@ -399,6 +394,6 @@ export default function AdminPanel() {
                     )}
                 </div>
             </div>
-        </AdminRoute>
+        </>
     );
 }

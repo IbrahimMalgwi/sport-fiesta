@@ -4,11 +4,12 @@ import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Button from "@/components/ui/Button";
+import { canManageEvents } from "@/utils/roles";
 
 const CATEGORIES = ["Male", "Female", "Mixed"];
 
 export default function SportsManager() {
-    const { currentUser } = useAuth();
+    const { currentUser, userRole } = useAuth();
     const supabase = createClient();
     const [sports, setSports] = useState([]);
     const [name, setName] = useState("");
@@ -78,6 +79,7 @@ export default function SportsManager() {
         }
     };
 
+    if (!canManageEvents(userRole)) return <p className="p-8 text-center">Only administrators can manage sporting activities.</p>;
     return (
         <div className="max-w-3xl mx-auto py-6 sm:py-8 px-3 sm:px-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6">Sporting Activities</h1>

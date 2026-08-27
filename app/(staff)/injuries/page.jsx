@@ -9,11 +9,12 @@ import { resolveHouses } from "@/utils/config";
 import { getHouseKeyByName } from "@/utils/houseMapping";
 import RegistrantPicker from "@/components/RegistrantPicker";
 import Button from "@/components/ui/Button";
+import { canMarshalEvents } from "@/utils/roles";
 
 const emptyForm = {
     person: null, personText: "", personName: "", houseKey: "",
     nature: "", medication: "", treatment: "",
-    incidentAt: new Date().toISOString().slice(0, 16), notes: "",
+    incidentAt: new Date().toISOString().slice(0, 16), notes: "", sportId: "", severity: "Minor",
 };
 
 export default function InjuriesManager() {
@@ -24,6 +25,7 @@ export default function InjuriesManager() {
     const supabase = createClient();
 
     const [injuries, setInjuries] = useState([]);
+    const [sports, setSports] = useState([]);
     const [form, setForm] = useState(emptyForm);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
@@ -33,9 +35,13 @@ export default function InjuriesManager() {
     useEffect(() => {
         let active = true;
         const load = async () => {
-            const { data } = await supabase.from("injuries").select("*").order("incidentAt", { ascending: false });
+            const [{ data }, { data: sportRows }] = await Promise.all([
+                supabase.from("injuries").select("*").order("incidentAt", { ascending: false }),
+                supabase.from("sports").select("id,name").order("name"),
+            ]);
             if (!active) return;
             setInjuries(data || []);
+            setSports(sportRows || []);
         };
         load();
         const channel = supabase.channel("injuries_changes")
@@ -51,14 +57,14 @@ export default function InjuriesManager() {
                 houseKey: person.houseKey || getHouseKeyByName(person.house) || f.houseKey,
             }));
         } else {
-            setForm((f) => ({ ...f, person: null, personText: text, personName: text }));
+            setForm((f) => ({ ...f, person: null, personText: text, personName: "" }));
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.personName.trim() || !form.nature.trim()) {
-            setError("Person's name and nature of injury are required.");
+        if (!form.person || !form.nature.trim()) {
+            setError("Select a registered participant and enter the nature of the injury.");
             return;
         }
         setSaving(true);
@@ -75,6 +81,8 @@ export default function InjuriesManager() {
                 treatment: form.treatment.trim(),
                 incidentAt: form.incidentAt ? new Date(form.incidentAt).toISOString() : new Date().toISOString(),
                 notes: form.notes.trim(),
+                sportId: form.sportId || null,
+                severity: form.severity,
                 recordedBy: currentUser.uid,
             });
             if (insErr) throw insErr;
@@ -108,7 +116,7 @@ export default function InjuriesManager() {
         });
     }, [injuries, houseFilter, search]);
 
-    if (!["marshal", "admin"].includes(userRole)) return <p className="p-8 text-center">Only Marshals can log injuries.</p>;
+    if (!canMarshalEvents(userRole)) return <p className="p-8 text-center">Only Marshals can log injuries.</p>;
     return (
         <div className="max-w-4xl mx-auto py-6 sm:py-8 px-3 sm:px-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6">Injury Register</h1>
@@ -116,7 +124,7 @@ export default function InjuriesManager() {
             <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 sm:p-6 mb-8 space-y-4">
                 {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
                 <RegistrantPicker registrations={registrations} value={form.personText} onSelect={handlePerson}
-                    label="Injured person" required placeholder="Link to a registrant, or type a name" />
+                    label="Injured participant" required placeholder="Search and select a registered participant" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">House</label>
@@ -131,6 +139,10 @@ export default function InjuriesManager() {
                         <input type="datetime-local" value={form.incidentAt} onChange={(e) => setForm({ ...form, incidentAt: e.target.value })}
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white" />
                     </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activity</label><select value={form.sportId} onChange={(e) => setForm({ ...form, sportId: e.target.value })} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"><option value="">Not activity-related</option>{sports.map((sport) => <option key={sport.id} value={sport.id}>{sport.name}</option>)}</select></div>
+                    <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Severity</label><select value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"><option>Minor</option><option>Moderate</option><option>Severe</option><option>Critical</option></select></div>
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nature of injury *</label>
@@ -190,6 +202,7 @@ export default function InjuriesManager() {
                                             {i.treatment && `Treatment: ${i.treatment}. `}
                                             {i.incidentAt && new Date(i.incidentAt).toLocaleString()}
                                         </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Severity: {i.severity || "Not recorded"}{i.sportId ? ` · ${sports.find((sport) => sport.id === i.sportId)?.name || "Activity"}` : ""}</p>
                                         {i.notes && <p className="text-xs italic text-gray-500 dark:text-gray-400 mt-1">{i.notes}</p>}
                                     </div>
                                     <button onClick={() => handleDelete(i.id)} className="shrink-0 text-red-600 dark:text-red-400 hover:text-red-800 text-sm">Delete</button>

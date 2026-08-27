@@ -8,12 +8,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { canManageEvents, canMarshalEvents, canRecordDecisions } from "@/utils/roles";
 
 export default function Header() {
     const { currentUser, logout, userRole } = useAuth();
     const { isDark, toggleTheme } = useTheme();
     const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const showFiestaMenu = canManageEvents(userRole) || canMarshalEvents(userRole) || canRecordDecisions(userRole);
 
     // Close mobile menu when route changes
     React.useEffect(() => {
@@ -53,7 +55,7 @@ export default function Header() {
                             </NavLink>
 
                             {/* Sports Fiesta operational modules (staff + admin) */}
-                            <div className="relative group">
+                            {showFiestaMenu && <div className="relative group">
                                 <button className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 whitespace-nowrap flex items-center">
                                     🏆 Fiesta
                                     <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,38 +65,38 @@ export default function Header() {
 
                                 {/* Dropdown menu for Sports Fiesta modules */}
                                 <div className="absolute left-0 mt-1 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                                    <Link
+                                    {canManageEvents(userRole) && <Link
                                         href="/admin/sports"
                                         className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700"
                                     >
                                         🏅 Sporting Activities
-                                    </Link>
-                                    <Link
+                                    </Link>}
+                                    {canMarshalEvents(userRole) && <Link
                                         href="/representatives"
                                         className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700"
                                     >
                                         👥 House Representatives
-                                    </Link>
-                                    <Link
+                                    </Link>}
+                                    {canMarshalEvents(userRole) && <Link
                                         href="/results"
                                         className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700"
                                     >
                                         🥇 Record Result
-                                    </Link>
-                                    <Link
+                                    </Link>}
+                                    {canMarshalEvents(userRole) && <Link
                                         href="/injuries"
                                         className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700"
                                     >
                                         🩹 Injury Register
-                                    </Link>
-                                    <Link
+                                    </Link>}
+                                    {canRecordDecisions(userRole) && <Link
                                         href="/decisions"
                                         className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                     >
                                         ✝️ Decisions for Christ
-                                    </Link>
+                                    </Link>}
                                 </div>
-                            </div>
+                            </div>}
 
                             <NavLink to="/dashboard" currentPath={pathname}>
                                 🎯 Dashboard
@@ -234,24 +236,24 @@ export default function Header() {
                             </MobileNavLink>
 
                             {/* Sports Fiesta modules for mobile */}
-                            <div className="px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200">
+                            {showFiestaMenu && <div className="px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200">
                                 🏆 Sports Fiesta
-                            </div>
-                            <MobileNavLink to="/admin/sports" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
+                            </div>}
+                            {canManageEvents(userRole) && <MobileNavLink to="/admin/sports" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
                                 &nbsp;&nbsp;🏅 Sporting Activities
-                            </MobileNavLink>
-                            <MobileNavLink to="/results" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
+                            </MobileNavLink>}
+                            {canMarshalEvents(userRole) && <MobileNavLink to="/results" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
                                 &nbsp;&nbsp;🥇 Record Result
-                            </MobileNavLink>
-                            <MobileNavLink to="/representatives" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
+                            </MobileNavLink>}
+                            {canMarshalEvents(userRole) && <MobileNavLink to="/representatives" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
                                 &nbsp;&nbsp;👥 House Representatives
-                            </MobileNavLink>
-                            <MobileNavLink to="/injuries" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
+                            </MobileNavLink>}
+                            {canMarshalEvents(userRole) && <MobileNavLink to="/injuries" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
                                 &nbsp;&nbsp;🩹 Injury Register
-                            </MobileNavLink>
-                            <MobileNavLink to="/decisions" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
+                            </MobileNavLink>}
+                            {canRecordDecisions(userRole) && <MobileNavLink to="/decisions" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
                                 &nbsp;&nbsp;✝️ Decisions for Christ
-                            </MobileNavLink>
+                            </MobileNavLink>}
 
                             <MobileNavLink to="/dashboard" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
                                 🎯 Dashboard

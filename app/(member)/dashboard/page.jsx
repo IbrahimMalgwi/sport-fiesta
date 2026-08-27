@@ -162,17 +162,18 @@ export default function CentralDashboard() {
         });
         return counts;
     }, [filteredRegs, previousEditions]);
+    const highestReturnEdition = useMemo(() => Object.entries(perEdition).sort((a, b) => b[1] - a[1])[0] || null, [perEdition]);
 
     const regCsv = useMemo(() => ({
         headers: [
             { label: "Reg No", key: "regNo" }, { label: "Name", key: "name" }, { label: "Age", key: "age" }, { label: "Gender", key: "sex" },
             { label: "Role", key: "role" }, { label: "House", key: "house" },
-            { label: "Prev fiestas attended", key: "prev" }, { label: "Editions", key: "editions" },
+            { label: "Total fiestas attended", key: "totalFiestas" }, { label: "Editions", key: "editions" },
         ],
         data: filteredRegs.map((r) => ({
             regNo: r.reg_no || "", name: registrantName(r), age: r.age || "", sex: r.sex || "", role: r.role || "Participant",
             house: r.house || "Unassigned",
-            prev: prevCount(r), editions: (r.fiestaAttendance || []).join(", "),
+            totalFiestas: prevCount(r) + 1, editions: (r.fiestaAttendance || []).join(", "),
         })),
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [filteredRegs, previousEditions]);
@@ -200,7 +201,7 @@ export default function CentralDashboard() {
         datasets: [{ data: houses.map((h) => perHouse[h.key] || 0), backgroundColor: houses.map((h) => h.color), borderRadius: 6 }],
     };
     const attendanceBarData = {
-        labels: Object.keys(attendanceBuckets).map((n) => `${n} prev`),
+        labels: Object.keys(attendanceBuckets).map((n) => `${Number(n) + 1} fiesta${Number(n) === 0 ? "" : "s"}`),
         datasets: [{ data: Object.values(attendanceBuckets), backgroundColor: "#6366f1", borderRadius: 6 }],
     };
     const scoreDoughnut = {
@@ -253,12 +254,14 @@ export default function CentralDashboard() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
                 <StatCard label="Registrations" value={total} emoji="📋" tone="indigo" />
                 <StatCard label="Returning" value={returningVsNew.returning} emoji="🔁" tone="blue" />
                 <StatCard label="New" value={returningVsNew.new} emoji="✨" tone="purple" />
                 <StatCard label="Injuries" value={injuries.length} emoji="🩹" tone="red" />
                 <StatCard label="Decisions" value={decisions.length} emoji="✝️" tone="yellow" />
+                <StatCard label={`All ${previousEditions.length + 1} fiestas`} value={attendanceBuckets[previousEditions.length] || 0} emoji="🏅" tone="green" />
+                <StatCard label="Highest return year" value={highestReturnEdition ? `${highestReturnEdition[0]} (${highestReturnEdition[1]})` : "N/A"} emoji="📅" tone="blue" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
@@ -344,11 +347,11 @@ export default function CentralDashboard() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 sm:p-6 mb-6">
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-1">Sports Fiesta attendance history</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    This year&rsquo;s registrants by how many of the previous {previousEditions.length} editions they attended.
+                    This year&rsquo;s registrants grouped by total fiestas attended, including the current edition.
                 </p>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
-                        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">By number of previous editions attended</h3>
+                        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">By total fiestas attended</h3>
                         <div className="h-48 sm:h-56"><Bar data={attendanceBarData} options={barOptions} /></div>
                     </div>
                     <div>
