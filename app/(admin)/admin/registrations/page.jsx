@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import EditForm from "@/components/EditRegistrationForm";
 import EditStaffForm from "@/components/EditStaffForm";
 import { createClient } from "@/lib/supabase/client";
-import { STAFF_DESIGNATION_FILTERS } from "@/utils/roles";
+import { STAFF_DESIGNATION_FILTERS } from "@/utils/config";
 import useConfig from "@/hooks/useConfig";
 import { resolveHouses } from "@/utils/config";
 import { getHouseKeyByName } from "@/utils/houseMapping";

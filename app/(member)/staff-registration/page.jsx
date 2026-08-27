@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Field, Input, Select } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
-import { STAFF_DESIGNATIONS } from "@/utils/roles";
+import { STAFF_DESIGNATIONS } from "@/utils/config";
 
 
 export default function StaffRegistration() {

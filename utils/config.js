@@ -8,6 +8,28 @@ import { houses as DEFAULT_HOUSES } from "./houseMapping";
 
 export const CONFIG_ROW_ID = 1;
 
+export const APP_ROLES = Object.freeze({
+    USER: "user",
+    STAFF: "staff",
+    MARSHAL: "marshal",
+    COUNSELLOR: "counsellor",
+    ADMIN: "admin",
+});
+export const AUTHENTICATED_ROLES = Object.freeze(Object.values(APP_ROLES));
+export const STAFF_DESIGNATIONS = Object.freeze([
+    "Marshal", "Counsellor", "Medic", "Media", "Sound",
+    "Welfare", "Data", "Security", "Other",
+]);
+export const LEGACY_STAFF_DESIGNATION = "Counselor/Marshal";
+export const STAFF_DESIGNATION_FILTERS = Object.freeze([
+    LEGACY_STAFF_DESIGNATION,
+    ...STAFF_DESIGNATIONS.filter((designation) => designation !== "Other"),
+    "Other",
+]);
+export const canManageEvents = (role) => role === APP_ROLES.ADMIN;
+export const canMarshalEvents = (role) => role === APP_ROLES.MARSHAL || role === APP_ROLES.ADMIN;
+export const canRecordDecisions = (role) => role === APP_ROLES.COUNSELLOR || role === APP_ROLES.ADMIN;
+
 // Sensible defaults used until an admin saves the config row.
 export const DEFAULT_CONFIG = {
     currentEdition: "5.0",

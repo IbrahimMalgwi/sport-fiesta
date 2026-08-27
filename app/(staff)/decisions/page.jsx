@@ -10,7 +10,7 @@ import { resolveHouses } from "@/utils/config";
 import { getHouseKeyByName } from "@/utils/houseMapping";
 import RegistrantPicker from "@/components/RegistrantPicker";
 import Button from "@/components/ui/Button";
-import { canRecordDecisions } from "@/utils/roles";
+import { canRecordDecisions } from "@/utils/config";
 
 // Counselors are staff (registered via /staff-registration, never house-
 // assigned) — not participants, so they're picked from staff_registrations

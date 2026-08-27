@@ -9,7 +9,7 @@ import { resolveHouses } from "@/utils/config";
 import { getHouseKeyByName } from "@/utils/houseMapping";
 import RegistrantPicker from "@/components/RegistrantPicker";
 import Button from "@/components/ui/Button";
-import { canMarshalEvents } from "@/utils/roles";
+import { canMarshalEvents } from "@/utils/config";
 
 const emptyForm = {
     person: null, personText: "", personName: "", houseKey: "",

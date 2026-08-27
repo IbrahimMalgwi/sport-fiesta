@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Field, Input, Select } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
-import { STAFF_DESIGNATIONS } from "@/utils/roles";
+import { STAFF_DESIGNATIONS } from "@/utils/config";
 
 
 export default function EditStaffForm({ staffMember, onSave, onCancel }) {

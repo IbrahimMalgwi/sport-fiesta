@@ -8,7 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { canManageEvents, canMarshalEvents, canRecordDecisions } from "@/utils/roles";
+import { canManageEvents, canMarshalEvents, canRecordDecisions } from "@/utils/config";
 
 export default function Header() {
     const { currentUser, logout, userRole } = useAuth();

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Button from "@/components/ui/Button";
-import { canManageEvents } from "@/utils/roles";
+import { canManageEvents } from "@/utils/config";
 
 const CATEGORIES = ["Male", "Female", "Mixed"];
 

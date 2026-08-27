@@ -2,7 +2,7 @@
 // app/(member)/staff-dashboard/page.jsx — ported from src/pages/StaffDashboard.jsx
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { STAFF_DESIGNATION_FILTERS } from "@/utils/roles";
+import { STAFF_DESIGNATION_FILTERS } from "@/utils/config";
 import { CSVLink } from "react-csv";
 import {
     Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, DoughnutController,
