@@ -70,6 +70,12 @@ export default function Header() {
                                         🏅 Sporting Activities
                                     </Link>
                                     <Link
+                                        href="/representatives"
+                                        className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700"
+                                    >
+                                        👥 House Representatives
+                                    </Link>
+                                    <Link
                                         href="/results"
                                         className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700"
                                     >
@@ -236,6 +242,9 @@ export default function Header() {
                             </MobileNavLink>
                             <MobileNavLink to="/results" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
                                 &nbsp;&nbsp;🥇 Record Result
+                            </MobileNavLink>
+                            <MobileNavLink to="/representatives" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
+                                &nbsp;&nbsp;👥 House Representatives
                             </MobileNavLink>
                             <MobileNavLink to="/injuries" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
                                 &nbsp;&nbsp;🩹 Injury Register

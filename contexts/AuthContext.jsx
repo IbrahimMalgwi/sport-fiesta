@@ -91,8 +91,14 @@ export function AuthProvider({ children }) {
 
     const signup = (email, password) =>
         // The profiles row is created server-side by the handle_new_user
-        // trigger (see supabase/migrations/0002_rls.sql).
-        supabase.auth.signUp({ email, password });
+        // trigger (see supabase/migrations/0002_rls.sql). emailRedirectTo
+        // sends the confirmation link to /login instead of Supabase's
+        // default fallback (the Site URL root).
+        supabase.auth.signUp({
+            email,
+            password,
+            options: { emailRedirectTo: `${window.location.origin}/login` },
+        });
 
     const logout = () => supabase.auth.signOut();
 

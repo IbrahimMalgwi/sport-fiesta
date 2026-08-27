@@ -22,7 +22,7 @@ const emptyForm = {
 };
 
 export default function DecisionsManager() {
-    const { currentUser } = useAuth();
+    const { currentUser, userRole } = useAuth();
     const { config } = useConfig();
     const { registrations } = useRegistrations();
     const { staffRegistrations } = useStaffRegistrations();
@@ -100,6 +100,7 @@ export default function DecisionsManager() {
         return decisions.filter((d) => d.houseKey === houseFilter);
     }, [decisions, houseFilter]);
 
+    if (!["counsellor", "admin"].includes(userRole)) return <p className="p-8 text-center">Only Counsellors can record decisions for Christ.</p>;
     return (
         <div className="max-w-4xl mx-auto py-6 sm:py-8 px-3 sm:px-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6">Decisions for Christ</h1>

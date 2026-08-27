@@ -17,7 +17,7 @@ const emptyForm = {
 };
 
 export default function InjuriesManager() {
-    const { currentUser } = useAuth();
+    const { currentUser, userRole } = useAuth();
     const { config } = useConfig();
     const { registrations } = useRegistrations();
     const houses = resolveHouses(config);
@@ -108,6 +108,7 @@ export default function InjuriesManager() {
         });
     }, [injuries, houseFilter, search]);
 
+    if (!["marshal", "admin"].includes(userRole)) return <p className="p-8 text-center">Only Marshals can log injuries.</p>;
     return (
         <div className="max-w-4xl mx-auto py-6 sm:py-8 px-3 sm:px-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6">Injury Register</h1>

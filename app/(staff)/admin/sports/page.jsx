@@ -15,6 +15,7 @@ export default function SportsManager() {
     const [category, setCategory] = useState("Mixed");
     const [minAge, setMinAge] = useState("");
     const [maxAge, setMaxAge] = useState("");
+    const [ageCategory, setAgeCategory] = useState("Open");
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
 
@@ -49,13 +50,15 @@ export default function SportsManager() {
                 category,
                 minAge: minAge !== "" ? Number(minAge) : null,
                 maxAge: maxAge !== "" ? Number(maxAge) : null,
+                ageCategory: ageCategory.trim() || "Open",
                 createdBy: currentUser.uid,
             });
             if (insErr) throw insErr;
             setName("");
             setCategory("Mixed");
             setMinAge("");
-            setMaxAge("");
+                setMaxAge("");
+                setAgeCategory("Open");
         } catch (err) {
             console.error("Error adding sport:", err);
             setError(err.message || "Could not add the activity.");
@@ -108,6 +111,7 @@ export default function SportsManager() {
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white" />
                     </div>
                 </div>
+                <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Age category</label><input value={ageCategory} onChange={(e) => setAgeCategory(e.target.value)} placeholder="e.g. Under-10, 11–15, Open" className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" /></div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
                     Leave both blank if this activity is open to all ages. When set, only participants within this range will be offered as medal winners when recording results.
                 </p>
@@ -135,6 +139,7 @@ export default function SportsManager() {
                                                 Ages {s.minAge ?? "0"}–{s.maxAge ?? "∞"}
                                             </span>
                                         )}
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">{s.ageCategory || "Open"}</span>
                                     </div>
                                 </div>
                                 <button onClick={() => handleDelete(s.id, s.name)} className="shrink-0 text-red-600 dark:text-red-400 hover:text-red-800 text-sm font-medium">Delete</button>

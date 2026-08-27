@@ -203,6 +203,8 @@ export default function AdminPanel() {
                                                         className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
                                                         <option value="user">User</option>
                                                         <option value="staff">Staff</option>
+                                                        <option value="marshal">Marshal</option>
+                                                        <option value="counsellor">Counsellor</option>
                                                         <option value="admin">Admin</option>
                                                     </select>
                                                 </td>
@@ -241,6 +243,8 @@ export default function AdminPanel() {
                                                 className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm px-2 py-1">
                                                 <option value="user">User</option>
                                                 <option value="staff">Staff</option>
+                                                <option value="marshal">Marshal</option>
+                                                <option value="counsellor">Counsellor</option>
                                                 <option value="admin">Admin</option>
                                             </select>
                                             <button onClick={() => handleDeleteUser(user.id)} className="text-red-600 dark:text-red-400 text-sm font-medium">Delete</button>

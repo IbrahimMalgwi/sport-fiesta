@@ -39,16 +39,23 @@ In the Supabase dashboard, open **SQL Editor** and run, in order:
    `0005_sports_age_range.sql` — incremental schema tweaks.
 4. `supabase/migrations/0006_open_role_access.sql` — opens registrations,
    staff_registrations, sports, results, injuries, and decisions up to any
-   signed-in role (not just staff/admin).
+   signed-in role (not just staff/admin) for reads and for creating their own
+   records; editing/deleting is limited to records the caller created (or any
+   record, for admins).
+5. `supabase/migrations/0007_staff_house_assignment.sql` — adds house-assignment
+   columns to staff_registrations (Counselor/Marshal registrants now get a
+   house, same balanced-random logic as participants).
 
 (Or, with the Supabase CLI: `supabase link` then `supabase db push`.)
 
 **Review the RLS policies** before relying on them. As of `0006`, any signed-in
-user (`user`, `staff`, or `admin`) can read and write registrations, staff
-registrations, sports, results, injuries, and decisions (`createdBy`/
-`recordedBy` are still forced to the caller). Only `profiles` (role
-management), `houses`, and `app_config` stay admin-write-only — those back the
-admin-only `/admin`, `/admin/registrations`, and `/admin/settings` routes.
+user (`user`, `staff`, or `admin`) can read all registrations, staff
+registrations, sports, results, injuries, and decisions, and create their own;
+updating/deleting a record requires being its creator (`createdBy`/
+`recordedBy`/`submittedByUid`, forced to the caller's own uid via a column
+default) or being an admin. Only `profiles` (role management), `houses`, and
+`app_config` stay admin-write-only — those back the admin-only `/admin`,
+`/admin/registrations`, and `/admin/settings` routes.
 
 ### Column naming note
 Domain columns are intentionally **camelCase** (e.g. `"houseKey"`,

@@ -1,8 +1,9 @@
 "use client";
-// app/(admin)/register/page.jsx — ported from src/pages/RegistrationForm.jsx.
+// app/(member)/register/page.jsx — ported from src/pages/RegistrationForm.jsx.
 // Firestore -> Supabase; the balanced min-count house assignment is unchanged.
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import useConfig from "@/hooks/useConfig";
 import { resolveHouses, isPastCutoff } from "@/utils/config";
 import { getHouseKeyByName, HOUSE_KEYS } from "@/utils/houseMapping";
@@ -24,6 +25,7 @@ const debounce = (func, wait) => {
 
 export default function RegistrationForm() {
     const { config } = useConfig();
+    const { currentUser } = useAuth();
     const supabase = createClient();
 
     const houses = resolveHouses(config);
@@ -201,7 +203,9 @@ export default function RegistrationForm() {
             // Registration stays open indefinitely, but once the admin-set
             // cutoff passes, new registrants are recorded WITHOUT a house.
             const past = isPastCutoff(config);
-            const house = past ? null : assignHouse();
+            const age = Number(formData.age);
+            const houseEligible = age >= 5 && age <= 20;
+            const house = !past && houseEligible ? assignHouse() : null;
 
             const { data: inserted, error } = await supabase.from("registrations").insert({
                 ...formData,
@@ -210,6 +214,7 @@ export default function RegistrationForm() {
                 color: house ? house.color : null,
                 assigned: !!house,
                 edition: currentEdition,
+                createdBy: currentUser?.uid,
                 fiestaAttendance: Array.isArray(formData.fiestaAttendance)
                     ? [...formData.fiestaAttendance, currentEdition]
                     : [currentEdition],
@@ -222,6 +227,7 @@ export default function RegistrationForm() {
                 color: house ? house.color : "#6b7280",
                 participant: formData.name,
                 regNo: inserted?.reg_no || null,
+                noHouseReason: !houseEligible ? "age" : (past ? "cutoff" : null),
             });
             handleReset();
             setErrors({});
@@ -439,7 +445,9 @@ export default function RegistrationForm() {
                             ) : (
                                 <div className="my-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-sm text-amber-700 dark:text-amber-300">
                                     <strong className="text-gray-800 dark:text-white">{success.participant}</strong> has been recorded.
-                                    House assignment is closed (registration cutoff passed), so no house was assigned.
+                                    {success.noHouseReason === "age"
+                                        ? "House assignment is only available to participants aged 5–20."
+                                        : "House assignment is closed (registration cutoff passed), so no house was assigned."}
                                 </div>
                             )}
                             <Button onClick={() => setSuccess(null)} className="mt-4">Continue</Button>

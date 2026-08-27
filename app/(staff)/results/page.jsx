@@ -19,7 +19,7 @@ const MEDALS = [
 const emptyForm = { sportId: "", medal: "gold", houseKey: "", person: null, personText: "" };
 
 export default function ResultsForm() {
-    const { currentUser } = useAuth();
+    const { currentUser, userRole } = useAuth();
     const { config } = useConfig();
     const { registrations } = useRegistrations();
     const houses = resolveHouses(config);
@@ -27,6 +27,7 @@ export default function ResultsForm() {
 
     const [sports, setSports] = useState([]);
     const [results, setResults] = useState([]);
+    const [representatives, setRepresentatives] = useState([]);
     const [form, setForm] = useState(emptyForm);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
@@ -48,6 +49,14 @@ export default function ResultsForm() {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
+        const load = async () => {
+            const { data } = await supabase.from("event_representatives").select("*").eq("edition", config.currentEdition);
+            setRepresentatives(data || []);
+        };
+        load();
+    }, [config.currentEdition]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
         let active = true;
         const load = async () => {
             const { data } = await supabase.from("results").select("*").order("created_at", { ascending: false });
@@ -66,11 +75,10 @@ export default function ResultsForm() {
         [sports, form.sportId]
     );
 
-    // Candidates for "Individual winner" are narrowed to the selected house
-    // (previously not filtered at all) and, when the sport has an age range
-    // set, to participants within that range.
     const eligiblePersons = useMemo(() => {
+        const pool = representatives.filter((r) => r.sportId === form.sportId);
         return registrations.filter((r) => {
+            if (!pool.some((entry) => entry.personId === r.id)) return false;
             if (form.houseKey) {
                 const rHouseKey = r.houseKey || getHouseKeyByName(r.house);
                 if (rHouseKey !== form.houseKey) return false;
@@ -79,12 +87,12 @@ export default function ResultsForm() {
             if (selectedSport?.maxAge != null && (r.age == null || r.age > selectedSport.maxAge)) return false;
             return true;
         });
-    }, [registrations, form.houseKey, selectedSport]);
+    }, [registrations, representatives, form.houseKey, form.sportId, selectedSport]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.sportId || !form.houseKey) {
-            setError("Please choose an activity and a winning house.");
+        if (!form.sportId || !form.houseKey || !form.person) {
+            setError("Choose an activity, house, and a pre-selected representative.");
             return;
         }
         setSaving(true);
@@ -92,6 +100,8 @@ export default function ResultsForm() {
         try {
             const house = houses.find((h) => h.key === form.houseKey);
             const points = config.medalPoints[form.medal] ?? 0;
+            const representative = representatives.find((r) => r.sportId === form.sportId && r.personId === form.person.id);
+            if (!representative) throw new Error("This participant was not selected as a representative for this event.");
             const { error: insErr } = await supabase.from("results").insert({
                 sportId: selectedSport.id,
                 sportName: selectedSport.name,
@@ -104,6 +114,7 @@ export default function ResultsForm() {
                 personName: form.person ? (form.person.name || form.person.fullName) : (form.personText || null),
                 edition: config.currentEdition,
                 recordedBy: currentUser.uid,
+                representativeId: representative.id,
             });
             if (insErr) throw insErr;
             setForm(emptyForm);
@@ -129,6 +140,7 @@ export default function ResultsForm() {
 
     const medalEmoji = { gold: "🥇", silver: "🥈", bronze: "🥉" };
 
+    if (!["marshal", "admin"].includes(userRole)) return <p className="p-8 text-center">Only Marshals can record event results.</p>;
     return (
         <div className="max-w-3xl mx-auto py-6 sm:py-8 px-3 sm:px-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6">Record Result</h1>
@@ -175,8 +187,9 @@ export default function ResultsForm() {
 
                 <RegistrantPicker items={eligiblePersons} value={form.personText}
                     onSelect={(person, text) => setForm({ ...form, person, personText: text })}
-                    label="Individual winner (optional)"
-                    placeholder={form.houseKey ? "Link to a participant, or leave blank" : "Choose a winning house first to narrow this list"} />
+                    label="Placed representative *"
+                    placeholder={form.houseKey ? "Select from the pre-event representative pool" : "Choose a winning house first"} />
+                {form.sportId && eligiblePersons.length === 0 && <p className="text-xs text-amber-600 dark:text-amber-400 -mt-2">No representatives have been selected for this event and house.</p>}
                 {selectedSport && (selectedSport.minAge != null || selectedSport.maxAge != null) && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
                         This activity is restricted to ages {selectedSport.minAge ?? "0"}–{selectedSport.maxAge ?? "∞"}; the list above is filtered accordingly.
