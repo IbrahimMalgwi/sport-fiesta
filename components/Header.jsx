@@ -30,16 +30,16 @@ export default function Header() {
                 Skip to main content
             </a>
 
-            <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2">
+            <div className="max-w-screen-2xl mx-auto px-3 sm:px-5 py-2.5 sm:py-3 flex items-center justify-between gap-4">
                 {/* Logo — always visible (brand identity shouldn't disappear on mobile) */}
-                <div className="flex items-center min-w-0">
-                    <Link href="/" className="flex items-center gap-2 group shrink-0">
-                        <img src="/logo.png" alt="All Winners" className="h-8 sm:h-10 w-auto rounded-lg shadow-md" />
+                <div className="flex items-center shrink-0">
+                    <Link href="/" className="flex items-center shrink-0" aria-label="All Winners home">
+                        <img src="/logo.png" alt="All Winners" className="h-10 w-10 sm:h-12 sm:w-12 object-contain rounded-lg shadow-md" />
                     </Link>
                 </div>
 
                 {/* Desktop navigation */}
-                <nav className="hidden lg:flex items-center space-x-1">
+                <nav className="hidden 2xl:flex items-center gap-0.5 min-w-0">
                     {currentUser ? (
                         <>
                             <NavLink to="/" currentPath={pathname}>
@@ -197,7 +197,7 @@ export default function Header() {
 
                 {/* Mobile menu button — 44px+ touch target per WCAG */}
                 <button
-                    className="lg:hidden p-2.5 -mr-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0"
+                    className="2xl:hidden p-2.5 -mr-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0"
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
                     aria-label="Toggle menu"
                     aria-expanded={isMenuOpen}
@@ -215,7 +215,7 @@ export default function Header() {
             {/* Mobile navigation — capped + scrollable so it never gets clipped
                 by the viewport on short phones with the full admin menu open */}
             <nav
-                className={`lg:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out overflow-y-auto ${
+                className={`2xl:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out overflow-y-auto ${
                     isMenuOpen ? 'max-h-[calc(100dvh-3.5rem)] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
                 }`}
                 aria-hidden={!isMenuOpen}

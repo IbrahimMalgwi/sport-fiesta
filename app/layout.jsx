@@ -9,6 +9,11 @@ import Layout from "@/components/Layout";
 export const metadata = {
     title: "House Registration",
     description: "Teen program Sports Fiesta registration and house assignment",
+    icons: {
+        icon: "/logo.png",
+        shortcut: "/logo.png",
+        apple: "/logo.png",
+    },
 };
 
 // Set the `dark` class before hydration so the theme doesn't flash.
