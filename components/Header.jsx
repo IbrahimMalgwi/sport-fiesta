@@ -8,7 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { canManageEvents, canMarshalEvents, canRecordDecisions } from "@/utils/config";
+import { canManageEvents, canMarshalEvents, canRecordDecisions, canSelectRepresentatives } from "@/utils/config";
 
 export default function Header() {
     const { currentUser, logout, userRole } = useAuth();
@@ -51,7 +51,7 @@ export default function Header() {
                                 📝 Register Participant
                             </NavLink>
                             <NavLink to="/staff-registration" currentPath={pathname}>
-                                👥 Register Staff
+                                👥 Register Counselor/Marshal
                             </NavLink>
 
                             {/* Sports Fiesta operational modules (staff + admin) */}
@@ -71,11 +71,17 @@ export default function Header() {
                                     >
                                         🏅 Sporting Activities
                                     </Link>}
-                                    {canMarshalEvents(userRole) && <Link
+                                    {canSelectRepresentatives(userRole) && <Link
                                         href="/representatives"
                                         className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700"
                                     >
                                         👥 House Representatives
+                                    </Link>}
+                                    {canSelectRepresentatives(userRole) && <Link
+                                        href="/participation"
+                                        className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700"
+                                    >
+                                        🔍 Participation Lookup
                                     </Link>}
                                     {canMarshalEvents(userRole) && <Link
                                         href="/results"
@@ -232,7 +238,7 @@ export default function Header() {
                                 📝 Register Participant
                             </MobileNavLink>
                             <MobileNavLink to="/staff-registration" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
-                                👥 Register Staff
+                                👥 Register Counselor/Marshal
                             </MobileNavLink>
 
                             {/* Sports Fiesta modules for mobile */}
@@ -245,8 +251,11 @@ export default function Header() {
                             {canMarshalEvents(userRole) && <MobileNavLink to="/results" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
                                 &nbsp;&nbsp;🥇 Record Result
                             </MobileNavLink>}
-                            {canMarshalEvents(userRole) && <MobileNavLink to="/representatives" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
+                            {canSelectRepresentatives(userRole) && <MobileNavLink to="/representatives" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
                                 &nbsp;&nbsp;👥 House Representatives
+                            </MobileNavLink>}
+                            {canSelectRepresentatives(userRole) && <MobileNavLink to="/participation" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
+                                &nbsp;&nbsp;🔍 Participation Lookup
                             </MobileNavLink>}
                             {canMarshalEvents(userRole) && <MobileNavLink to="/injuries" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
                                 &nbsp;&nbsp;🩹 Injury Register

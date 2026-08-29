@@ -29,6 +29,11 @@ export const STAFF_DESIGNATION_FILTERS = Object.freeze([
 export const canManageEvents = (role) => role === APP_ROLES.ADMIN;
 export const canMarshalEvents = (role) => role === APP_ROLES.MARSHAL || role === APP_ROLES.ADMIN;
 export const canRecordDecisions = (role) => role === APP_ROLES.COUNSELLOR || role === APP_ROLES.ADMIN;
+// Representative selection and the participation lookup are shared by
+// Marshals and Counsellors (not just Marshals) — see
+// supabase/migrations/0013_house_scoped_representatives.sql.
+export const canSelectRepresentatives = (role) =>
+    role === APP_ROLES.MARSHAL || role === APP_ROLES.COUNSELLOR || role === APP_ROLES.ADMIN;
 
 // Sensible defaults used until an admin saves the config row.
 export const DEFAULT_CONFIG = {

@@ -73,6 +73,12 @@ In the Supabase dashboard, open **SQL Editor** and run, in order:
     bound), replacing the `registrations_house_age_check` constraint added by
     `0008`. The matching client-side check is in
     `app/(member)/register/page.jsx`'s `completeRegistration`.
+11. `supabase/migrations/0013_house_scoped_representatives.sql` — adds
+    `public.current_staff_house_key()` (resolves the caller's own house from
+    their `staff_registrations` row) and tightens `event_representatives`
+    insert/delete RLS so Marshals/Counsellors can only select/remove
+    representatives for their own house (Admins stay unrestricted); also
+    extends that access from Marshal-only to Marshal + Counsellor.
 
 (Or, with the Supabase CLI: `supabase link` then `supabase db push`.)
 

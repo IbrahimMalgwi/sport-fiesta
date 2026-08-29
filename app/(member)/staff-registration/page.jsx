@@ -154,7 +154,7 @@ export default function StaffRegistration() {
                 <Card>
                     <CardContent className="space-y-4">
                         <div className="text-center">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-indigo-700 dark:text-indigo-400 mb-2">Staff Registration</h2>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-indigo-700 dark:text-indigo-400 mb-2">Register Counselor/Marshal</h2>
                             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Register as Counselor, Marshal, or Support Staff</p>
                             <div className="mt-6">
                                 <div className="flex justify-between items-center mb-2">
