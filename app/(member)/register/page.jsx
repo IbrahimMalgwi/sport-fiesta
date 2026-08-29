@@ -1,6 +1,10 @@
 "use client";
 // app/(member)/register/page.jsx — ported from src/pages/RegistrationForm.jsx.
-// Firestore -> Supabase; the balanced min-count house assignment is unchanged.
+// Firestore -> Supabase. The balanced min-count/random-tiebreak house
+// assignment now runs atomically inside public.register_participant() (see
+// supabase/migrations/0009_atomic_house_assignment.sql) so it can't race
+// with a simultaneous registration — this file no longer picks the house
+// itself, it just asks the RPC to.
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,9 +40,9 @@ export default function RegistrationForm() {
     }));
 
     // This form only ever registers Participants (teens) — Marshals/Counselors/
-    // support staff register separately via /staff-registration and are never
-    // assigned a house. Keeping a role picker here previously let someone be
-    // recorded as "Marshal"/"Counselor" in this table and still get a house.
+    // support staff register separately via /staff-registration. Marshals are
+    // assigned a house there too now, drawn from the same balanced pool as
+    // participants (see completeRegistration below).
     const [formData, setFormData] = useState({
         name: "", age: "", sex: "", religion: "",
         phone: "", email: "", fiestaAttendance: [],
@@ -71,20 +75,25 @@ export default function RegistrationForm() {
         return () => clearTimeout(timer);
     }, [formData]);
 
-    // Fetch current house counts from Supabase
+    // Fetch current house counts from Supabase. Marshals now count toward
+    // house balance alongside participants, so this combines both tables —
+    // purely for the live display below; the actual assignment is decided
+    // atomically inside the RPC at submit time, not from this snapshot.
     useEffect(() => {
         let isMounted = true;
         async function fetchHouseCounts() {
             try {
-                const { data, error } = await supabase
-                    .from("registrations")
-                    .select("houseKey, house");
-                if (error) throw error;
+                const [{ data: regData, error: regError }, { data: staffData, error: staffError }] = await Promise.all([
+                    supabase.from("registrations").select("houseKey, house"),
+                    supabase.from("staff_registrations").select("houseKey, house"),
+                ]);
+                if (regError) throw regError;
+                if (staffError) throw staffError;
                 if (!isMounted) return;
 
                 const counts = {};
                 HOUSE_KEYS.forEach((key) => { counts[key] = 0; });
-                (data || []).forEach((row) => {
+                [...(regData || []), ...(staffData || [])].forEach((row) => {
                     const houseKey = row.houseKey || getHouseKeyByName(row.house);
                     if (houseKey && counts.hasOwnProperty(houseKey)) counts[houseKey]++;
                 });
@@ -135,21 +144,6 @@ export default function RegistrationForm() {
             if (duplicates.length > 0) console.log("Potential duplicates found:", duplicates.length);
         }
     }, 1000);
-
-    // Smart house assignment — balanced min-count (unchanged)
-    const assignHouse = () => {
-        if (Object.keys(houseCounts).length === 0) {
-            return houses[Math.floor(Math.random() * houses.length)];
-        }
-        let minCount = Infinity;
-        let candidateHouses = [];
-        houses.forEach((house) => {
-            const count = houseCounts[house.key] || 0;
-            if (count < minCount) { minCount = count; candidateHouses = [house]; }
-            else if (count === minCount) candidateHouses.push(house);
-        });
-        return candidateHouses[Math.floor(Math.random() * candidateHouses.length)];
-    };
 
     const validateForm = () => {
         const newErrors = {};
@@ -205,24 +199,32 @@ export default function RegistrationForm() {
             const past = isPastCutoff(config);
             const age = Number(formData.age);
             const houseEligible = age >= 5 && age <= 20;
-            const house = !past && houseEligible ? assignHouse() : null;
+            const houseAssignmentAllowed = !past && houseEligible;
 
-            const { data: inserted, error } = await supabase.from("registrations").insert({
-                ...formData,
-                houseKey: house ? house.key : null,
-                house: house ? house.name : null,
-                color: house ? house.color : null,
-                assigned: !!house,
-                edition: currentEdition,
-                createdBy: currentUser?.uid,
-                fiestaAttendance: [...new Set([...(Array.isArray(formData.fiestaAttendance) ? formData.fiestaAttendance : []), currentEdition])],
-            }).select("reg_no").single();
+            // The balanced min-count/random-tiebreak pick and the insert
+            // happen together, atomically, inside this RPC — see
+            // supabase/migrations/0009_atomic_house_assignment.sql.
+            const { data: inserted, error } = await supabase.rpc("register_participant", {
+                p_name: formData.name,
+                p_age: age,
+                p_sex: formData.sex,
+                p_religion: formData.religion,
+                p_phone: formData.phone || null,
+                p_email: formData.email || null,
+                p_fiesta_attendance: [...new Set([...(Array.isArray(formData.fiestaAttendance) ? formData.fiestaAttendance : []), currentEdition])],
+                p_edition: currentEdition,
+                p_created_by: currentUser?.uid,
+                p_house_eligible: houseAssignmentAllowed,
+                p_house_keys: houses.map((h) => h.key),
+                p_house_names: houses.map((h) => h.name),
+                p_house_colors: houses.map((h) => h.color),
+            });
             if (error) throw error;
 
             setSuccess({
-                assigned: !!house,
-                name: house ? house.name : null,
-                color: house ? house.color : "#6b7280",
+                assigned: !!inserted?.assigned,
+                name: inserted?.house || null,
+                color: inserted?.color || "#6b7280",
                 participant: formData.name,
                 regNo: inserted?.reg_no || null,
                 noHouseReason: !houseEligible ? "age" : (past ? "cutoff" : null),

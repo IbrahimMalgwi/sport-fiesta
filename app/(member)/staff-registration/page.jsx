@@ -1,19 +1,29 @@
 "use client";
 // app/(member)/staff-registration/page.jsx — ported from src/pages/StaffRegistration.jsx
+//
+// Marshals are now assigned a house at registration, atomically, via the
+// same public.register_staff() -> public.pick_balanced_house() RPC path
+// participants use (see supabase/migrations/0009_atomic_house_assignment.sql)
+// — no separate assignment algorithm lives here.
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { createClient } from "@/lib/supabase/client";
+import useConfig from "@/hooks/useConfig";
+import { resolveHouses } from "@/utils/config";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Field, Input, Select } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
 import { STAFF_DESIGNATIONS } from "@/utils/config";
 
+const DEFAULT_POPUP_COLOR = "#4f46e5";
 
 export default function StaffRegistration() {
     const { currentUser } = useAuth();
     const router = useRouter();
     const supabase = createClient();
+    const { config } = useConfig();
+    const houses = resolveHouses(config);
 
     useEffect(() => {
         if (!currentUser) router.replace("/login");
@@ -79,19 +89,30 @@ export default function StaffRegistration() {
         }
         setLoading(true);
         try {
-            const { error } = await supabase.from("staff_registrations").insert({
-                ...formData,
-                finalDesignation: formData.designation === "Other" ? formData.otherDesignation : formData.designation,
-                registrationType: "staff",
-                submittedByUid: currentUser.uid,
-                submittedByEmail: currentUser.email,
-                submittedByName: currentUser.displayName || "Unknown",
-                houseKey: null, house: null, color: null, assigned: false,
+            // House eligibility (designation === "Marshal") is decided
+            // server-side; the balanced pick and the insert happen together,
+            // atomically, inside this RPC.
+            const { data: inserted, error } = await supabase.rpc("register_staff", {
+                p_name: formData.name,
+                p_phone: formData.phone,
+                p_email: formData.email,
+                p_organization: formData.organization,
+                p_designation: formData.designation,
+                p_other_designation: formData.otherDesignation,
+                p_submitted_by_uid: currentUser.uid,
+                p_submitted_by_email: currentUser.email,
+                p_submitted_by_name: currentUser.displayName || "Unknown",
+                p_house_keys: houses.map((h) => h.key),
+                p_house_names: houses.map((h) => h.name),
+                p_house_colors: houses.map((h) => h.color),
             });
             if (error) throw error;
             setSuccess({
                 name: formData.name,
                 designation: formData.designation === "Other" ? formData.otherDesignation : formData.designation,
+                assigned: !!inserted?.assigned,
+                house: inserted?.house || null,
+                color: inserted?.color || DEFAULT_POPUP_COLOR,
             });
             handleReset();
             setErrors({});
@@ -195,10 +216,10 @@ export default function StaffRegistration() {
 
                 {success && (
                     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg text-center max-w-sm w-full max-h-[90vh] overflow-y-auto animate-pop-in" style={{ borderTop: "8px solid #4f46e5" }}>
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg text-center max-w-sm w-full max-h-[90vh] overflow-y-auto animate-pop-in" style={{ borderTop: `8px solid ${success.color}` }}>
                             <div className="mb-4">
-                                <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center" style={{ backgroundColor: "#4f46e520" }}>
-                                    <svg className="w-8 h-8" style={{ color: "#4f46e5" }} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center" style={{ backgroundColor: `${success.color}20` }}>
+                                    <svg className="w-8 h-8" style={{ color: success.color }} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                                     </svg>
                                 </div>
@@ -207,10 +228,19 @@ export default function StaffRegistration() {
                             <p className="mt-3 text-sm sm:text-base text-gray-600 dark:text-gray-300">
                                 <strong className="text-gray-800 dark:text-white">{success.name}</strong> has been registered as
                             </p>
-                            <div className="my-4 py-2 px-4 rounded-lg inline-block" style={{ backgroundColor: "#4f46e520" }}>
-                                <span className="font-bold text-lg" style={{ color: "#4f46e5" }}>{success.designation}</span>
+                            <div className="my-4 py-2 px-4 rounded-lg inline-block" style={{ backgroundColor: `${success.color}20` }}>
+                                <span className="font-bold text-lg" style={{ color: success.color }}>{success.designation}</span>
                             </div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Staff are not assigned to houses.</p>
+                            {success.assigned ? (
+                                <>
+                                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">has been assigned to</p>
+                                    <div className="my-4 py-2 px-4 rounded-lg inline-block" style={{ backgroundColor: `${success.color}20` }}>
+                                        <span className="font-bold text-lg" style={{ color: success.color }}>{success.house}</span>
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Staff are not assigned to houses.</p>
+                            )}
                             <Button onClick={() => setSuccess(null)} className="mt-4">Continue</Button>
                         </div>
                     </div>

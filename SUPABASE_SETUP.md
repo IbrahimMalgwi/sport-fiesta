@@ -43,8 +43,18 @@ In the Supabase dashboard, open **SQL Editor** and run, in order:
    records; editing/deleting is limited to records the caller created (or any
    record, for admins).
 5. `supabase/migrations/0007_staff_house_assignment.sql` — adds house-assignment
-   columns to staff_registrations (Counselor/Marshal registrants now get a
-   house, same balanced-random logic as participants).
+   columns to staff_registrations (later reversed by `0008`, then narrowed back
+   to Marshals only by `0009` — see below).
+6. `supabase/migrations/0008_fiesta_enhancements.sql` — marshal/counsellor
+   roles, `event_representatives`, and an RLS overhaul gating writes on the
+   caller's role.
+7. `supabase/migrations/0009_atomic_house_assignment.sql` — moves the balanced
+   min-count/random-tiebreak house pick into Postgres
+   (`public.pick_balanced_house()`), called atomically (under an advisory
+   lock) by both `public.register_participant()` and `public.register_staff()`
+   so two simultaneous registrations can never land on the same "currently
+   lowest" house. Marshals are assigned a house through this path too, drawn
+   from the same combined, real-time count as participants.
 
 (Or, with the Supabase CLI: `supabase link` then `supabase db push`.)
 
