@@ -1,10 +1,11 @@
 "use client";
 // app/(member)/staff-registration/page.jsx — ported from src/pages/StaffRegistration.jsx
 //
-// Marshals are now assigned a house at registration, atomically, via the
-// same public.register_staff() -> public.pick_balanced_house() RPC path
-// participants use (see supabase/migrations/0009_atomic_house_assignment.sql)
-// — no separate assignment algorithm lives here.
+// All staff (any designation) are assigned a house at registration,
+// atomically, via the same public.register_staff() -> public.pick_balanced_house()
+// RPC path participants use (see supabase/migrations/0009_atomic_house_assignment.sql
+// and 0011_all_staff_house_assignment.sql) — no separate assignment
+// algorithm lives here.
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -89,9 +90,8 @@ export default function StaffRegistration() {
         }
         setLoading(true);
         try {
-            // House eligibility (designation === "Marshal") is decided
-            // server-side; the balanced pick and the insert happen together,
-            // atomically, inside this RPC.
+            // Every staff registration is house-eligible now; the balanced
+            // pick and the insert happen together, atomically, inside this RPC.
             const { data: inserted, error } = await supabase.rpc("register_staff", {
                 p_name: formData.name,
                 p_phone: formData.phone,
@@ -105,7 +105,7 @@ export default function StaffRegistration() {
                 p_house_keys: houses.map((h) => h.key),
                 p_house_names: houses.map((h) => h.name),
                 p_house_colors: houses.map((h) => h.color),
-            });
+            }).single(); // RPCs return rows as an array by default — coerce to the single inserted row.
             if (error) throw error;
             setSuccess({
                 name: formData.name,

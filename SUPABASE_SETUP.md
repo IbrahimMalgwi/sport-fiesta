@@ -55,6 +55,24 @@ In the Supabase dashboard, open **SQL Editor** and run, in order:
    so two simultaneous registrations can never land on the same "currently
    lowest" house. Marshals are assigned a house through this path too, drawn
    from the same combined, real-time count as participants.
+8. `supabase/migrations/0010_fixed_sports_catalog.sql` — replaces whatever is
+   in `public.sports` with the fixed Sports Fiesta 5.0 catalog (33 events:
+   Team Sports, Track & Field, Fun & Field Games, Mind & Social Games), and
+   adds `"eventGroup"`, `"sortOrder"`, and `"medalEligible"` columns (the
+   three Mind & Social Games are `medalEligible = false`). **This deletes any
+   existing rows in `public.sports`** — see the comment at the top of that
+   file for exactly what that does (and doesn't) affect in `results` and
+   `event_representatives`. There is no longer an "Add activity" flow in the
+   app; the catalog is only changed by editing this migration.
+9. `supabase/migrations/0011_all_staff_house_assignment.sql` — expands house
+   assignment from Marshal-only to every staff designation, by replacing
+   `public.register_staff()`'s eligibility check (same function, same
+   `public.pick_balanced_house()` algorithm — only the gate changes).
+10. `supabase/migrations/0012_participant_house_age_range.sql` — participant
+    house-assignment eligibility changes from ages 5-20 to 9-and-up (no upper
+    bound), replacing the `registrations_house_age_check` constraint added by
+    `0008`. The matching client-side check is in
+    `app/(member)/register/page.jsx`'s `completeRegistration`.
 
 (Or, with the Supabase CLI: `supabase link` then `supabase db push`.)
 

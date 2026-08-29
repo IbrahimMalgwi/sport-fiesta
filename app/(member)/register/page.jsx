@@ -40,7 +40,7 @@ export default function RegistrationForm() {
     }));
 
     // This form only ever registers Participants (teens) — Marshals/Counselors/
-    // support staff register separately via /staff-registration. Marshals are
+    // support staff register separately via /staff-registration. All staff are
     // assigned a house there too now, drawn from the same balanced pool as
     // participants (see completeRegistration below).
     const [formData, setFormData] = useState({
@@ -198,7 +198,7 @@ export default function RegistrationForm() {
             // cutoff passes, new registrants are recorded WITHOUT a house.
             const past = isPastCutoff(config);
             const age = Number(formData.age);
-            const houseEligible = age >= 5 && age <= 20;
+            const houseEligible = age >= 9;
             const houseAssignmentAllowed = !past && houseEligible;
 
             // The balanced min-count/random-tiebreak pick and the insert
@@ -218,7 +218,7 @@ export default function RegistrationForm() {
                 p_house_keys: houses.map((h) => h.key),
                 p_house_names: houses.map((h) => h.name),
                 p_house_colors: houses.map((h) => h.color),
-            });
+            }).single(); // RPCs return rows as an array by default — coerce to the single inserted row.
             if (error) throw error;
 
             setSuccess({
@@ -446,7 +446,7 @@ export default function RegistrationForm() {
                                 <div className="my-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-sm text-amber-700 dark:text-amber-300">
                                     <strong className="text-gray-800 dark:text-white">{success.participant}</strong> has been recorded.
                                     {success.noHouseReason === "age"
-                                        ? "House assignment is only available to participants aged 5–20."
+                                        ? "House assignment is only available to participants aged 9 and above."
                                         : "House assignment is closed (registration cutoff passed), so no house was assigned."}
                                 </div>
                             )}
