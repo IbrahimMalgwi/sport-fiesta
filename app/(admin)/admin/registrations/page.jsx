@@ -12,12 +12,11 @@ import { useRouter } from "next/navigation";
 import EditForm from "@/components/EditRegistrationForm";
 import EditStaffForm from "@/components/EditStaffForm";
 import { createClient } from "@/lib/supabase/client";
-import { STAFF_DESIGNATION_FILTERS } from "@/utils/config";
 import useConfig from "@/hooks/useConfig";
 import { resolveHouses } from "@/utils/config";
 import { getHouseKeyByName } from "@/utils/houseMapping";
 import { LoadingScreen } from "@/components/ui/Spinner";
-import { HouseBadge, Badge } from "@/components/ui/Badge";
+import { HouseBadge } from "@/components/ui/Badge";
 import { MobileCardRow, MobileCardField, MobileCardActions } from "@/components/ui/MobileCardList";
 
 
@@ -71,19 +70,16 @@ export default function RegistrationsManager() {
     const [editingStaff, setEditingStaff] = useState(null);
     const [showEditStaffModal, setShowEditStaffModal] = useState(false);
     const [staffSearch, setStaffSearch] = useState("");
-    const [designationFilter, setDesignationFilter] = useState("all");
 
     const filteredStaff = useMemo(() => {
         return staff.filter((member) => {
-            const designation = member.finalDesignation || member.designation;
-            if (designationFilter !== "all" && designation !== designationFilter) return false;
             if (staffSearch) {
                 const hay = `${member.name || ""} ${member.email || ""} ${member.phone || ""} ${member.organization || ""}`.toLowerCase();
                 if (!hay.includes(staffSearch.toLowerCase())) return false;
             }
             return true;
         });
-    }, [staff, designationFilter, staffSearch]);
+    }, [staff, staffSearch]);
 
     const [errorMsg, setErrorMsg] = useState("");
 
@@ -181,12 +177,6 @@ export default function RegistrationsManager() {
         try {
             // eslint-disable-next-line no-unused-vars
             const { id, created_at, createdAt, submittedByUid, submittedByEmail, submittedByName, registrationType, ...dataToUpdate } = updatedData;
-            if (dataToUpdate.designation === "Other") {
-                dataToUpdate.finalDesignation = dataToUpdate.otherDesignation;
-            } else {
-                dataToUpdate.finalDesignation = dataToUpdate.designation;
-                dataToUpdate.otherDesignation = "";
-            }
             const { error } = await supabase.from("staff_registrations").update(dataToUpdate).eq("id", editingStaff.id);
             if (error) throw error;
             setStaff((prev) => prev.map((m) => (m.id === editingStaff.id ? { ...m, ...dataToUpdate } : m)));
@@ -336,11 +326,6 @@ export default function RegistrationsManager() {
                             <div className="mb-4 flex flex-col sm:flex-row sm:justify-end gap-2">
                                 <input type="text" value={staffSearch} onChange={(e) => setStaffSearch(e.target.value)} placeholder="Search name, email, phone, org..."
                                     className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white sm:w-64" />
-                                <select value={designationFilter} onChange={(e) => setDesignationFilter(e.target.value)}
-                                    className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
-                                    <option value="all">All designations</option>
-                                    {STAFF_DESIGNATION_FILTERS.map((d) => <option key={d} value={d}>{d}</option>)}
-                                </select>
                             </div>
 
                             <div className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl overflow-hidden">
@@ -352,7 +337,6 @@ export default function RegistrationsManager() {
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Staff Member</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Contact</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Organization</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Designation</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date Registered</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                                             </tr>
@@ -366,9 +350,6 @@ export default function RegistrationsManager() {
                                                         <div className="text-sm text-gray-500 dark:text-gray-400">✉️ {member.email}</div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{member.organization}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <Badge>{member.finalDesignation || member.designation}</Badge>
-                                                    </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                         {member.created_at ? new Date(member.created_at).toLocaleDateString() : "N/A"}
                                                     </td>
@@ -386,10 +367,7 @@ export default function RegistrationsManager() {
                                 <div className="sm:hidden p-3 space-y-3">
                                     {filteredStaff.map((member) => (
                                         <MobileCardRow key={member.id}>
-                                            <div className="flex items-start justify-between gap-2">
-                                                <span className="font-semibold text-gray-900 dark:text-white">{member.name}</span>
-                                                <Badge>{member.finalDesignation || member.designation}</Badge>
-                                            </div>
+                                            <span className="font-semibold text-gray-900 dark:text-white">{member.name}</span>
                                             <MobileCardField label="Organization">{member.organization}</MobileCardField>
                                             <MobileCardField label="Phone">{member.phone}</MobileCardField>
                                             <MobileCardField label="Email">{member.email}</MobileCardField>

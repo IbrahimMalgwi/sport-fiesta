@@ -332,7 +332,6 @@ export default function AdminPanel() {
                                         <tr>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Staff Member</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Organization</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Designation</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                                         </tr>
@@ -345,9 +344,6 @@ export default function AdminPanel() {
                                                     <div className="text-sm text-gray-500 dark:text-gray-400">{member.email}{member.phone && ` • 📞 ${member.phone}`}</div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{member.organization}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 rounded-full">{member.finalDesignation || member.designation}</span>
-                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                     {member.created_at ? new Date(member.created_at).toLocaleDateString() : "N/A"}
                                                 </td>
@@ -363,10 +359,7 @@ export default function AdminPanel() {
                             <div className="sm:hidden p-3 space-y-3">
                                 {staff.map((member) => (
                                     <MobileCardRow key={member.id}>
-                                        <div className="flex items-start justify-between gap-2">
-                                            <span className="font-semibold text-gray-900 dark:text-white">{member.name}</span>
-                                            <span className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 rounded-full whitespace-nowrap">{member.finalDesignation || member.designation}</span>
-                                        </div>
+                                        <span className="font-semibold text-gray-900 dark:text-white">{member.name}</span>
                                         <MobileCardField label="Organization">{member.organization}</MobileCardField>
                                         <MobileCardField label="Contact">{member.phone || member.email}</MobileCardField>
                                         <MobileCardField label="Date">{member.created_at ? new Date(member.created_at).toLocaleDateString() : "N/A"}</MobileCardField>

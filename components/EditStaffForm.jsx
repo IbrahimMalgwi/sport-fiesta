@@ -1,9 +1,8 @@
 "use client";
 // components/EditStaffForm.jsx (pure form; onSave supplied by parent)
 import React, { useState } from "react";
-import { Field, Input, Select } from "@/components/ui/Field";
+import { Field, Input } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
-import { STAFF_DESIGNATIONS } from "@/utils/config";
 
 
 export default function EditStaffForm({ staffMember, onSave, onCancel }) {
@@ -12,8 +11,6 @@ export default function EditStaffForm({ staffMember, onSave, onCancel }) {
         phone: staffMember.phone || "",
         email: staffMember.email || "",
         organization: staffMember.organization || "",
-        designation: staffMember.designation || "",
-        otherDesignation: staffMember.otherDesignation || "",
     });
 
     const [errors, setErrors] = useState({});
@@ -27,8 +24,6 @@ export default function EditStaffForm({ staffMember, onSave, onCancel }) {
         if (!formData.email.trim()) newErrors.email = "Email is required";
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Please enter a valid email address";
         if (!formData.organization.trim()) newErrors.organization = "Organization is required";
-        if (!formData.designation) newErrors.designation = "Please select a designation";
-        else if (formData.designation === "Other" && !formData.otherDesignation.trim()) newErrors.otherDesignation = "Please specify your designation";
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -50,9 +45,6 @@ export default function EditStaffForm({ staffMember, onSave, onCancel }) {
     const handleChange = (field, value) => {
         setFormData({ ...formData, [field]: value });
         if (errors[field]) setErrors({ ...errors, [field]: "" });
-        if (field === "designation" && value !== "Other") {
-            setFormData((prev) => ({ ...prev, otherDesignation: "" }));
-        }
     };
 
     return (
@@ -72,19 +64,6 @@ export default function EditStaffForm({ staffMember, onSave, onCancel }) {
             <Field label="Organization" required error={errors.organization}>
                 <Input type="text" value={formData.organization} onChange={(e) => handleChange("organization", e.target.value)} error={errors.organization} placeholder="Enter organization name" />
             </Field>
-
-            <Field label="Designation" required error={errors.designation}>
-                <Select value={formData.designation} onChange={(e) => handleChange("designation", e.target.value)} error={errors.designation}>
-                    <option value="">Select Designation</option>
-                    {STAFF_DESIGNATIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
-                </Select>
-            </Field>
-
-            {formData.designation === "Other" && (
-                <Field label="Specify Designation" required error={errors.otherDesignation}>
-                    <Input type="text" value={formData.otherDesignation} onChange={(e) => handleChange("otherDesignation", e.target.value)} error={errors.otherDesignation} placeholder="Enter your designation" />
-                </Field>
-            )}
 
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6">
                 <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
