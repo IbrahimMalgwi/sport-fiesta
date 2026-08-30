@@ -36,6 +36,7 @@ export default function DecisionsManager() {
 
     const [decisions, setDecisions] = useState([]);
     const [form, setForm] = useState(emptyForm);
+    const [editingId, setEditingId] = useState(null);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
     const [houseFilter, setHouseFilter] = useState("all");
@@ -65,7 +66,7 @@ export default function DecisionsManager() {
         try {
             const houseKey = form.person.houseKey || getHouseKeyByName(form.person.house) || null;
             const house = houses.find((h) => h.key === houseKey);
-            const { error: insErr } = await supabase.from("decisions").insert({
+            const payload = {
                 personId: form.person.id,
                 personName: registrantName(form.person),
                 houseKey,
@@ -74,10 +75,16 @@ export default function DecisionsManager() {
                 notes: form.notes.trim(),
                 counselorId: form.counselor ? form.counselor.id : null,
                 counselorName: form.counselor ? form.counselor.name : (form.counselorText || null),
-                recordedBy: currentUser.uid,
-            });
-            if (insErr) throw insErr;
+            };
+            if (editingId) {
+                const { error: updErr } = await supabase.from("decisions").update(payload).eq("id", editingId);
+                if (updErr) throw updErr;
+            } else {
+                const { error: insErr } = await supabase.from("decisions").insert({ ...payload, recordedBy: currentUser.uid });
+                if (insErr) throw insErr;
+            }
             setForm(emptyForm);
+            setEditingId(null);
         } catch (err) {
             console.error("Error saving decision:", err);
             setError(err.message || "Could not save the decision.");
@@ -86,11 +93,33 @@ export default function DecisionsManager() {
         }
     };
 
+    const handleEdit = (d) => {
+        const person = registrations.find((r) => r.id === d.personId) || (d.personId ? { id: d.personId, name: d.personName, houseKey: d.houseKey, house: d.house } : null);
+        const counselor = staffRegistrations.find((s) => s.id === d.counselorId) || null;
+        setForm({
+            person,
+            personText: d.personName || "",
+            counselor,
+            counselorText: d.counselorName || "",
+            decisionDate: d.decisionDate || new Date().toISOString().slice(0, 10),
+            notes: d.notes || "",
+        });
+        setEditingId(d.id);
+        setError("");
+    };
+
+    const handleCancelEdit = () => {
+        setForm(emptyForm);
+        setEditingId(null);
+        setError("");
+    };
+
     const handleDelete = async (id) => {
         if (!window.confirm("Delete this decision record?")) return;
         try {
             const { error: delErr } = await supabase.from("decisions").delete().eq("id", id);
             if (delErr) throw delErr;
+            if (editingId === id) handleCancelEdit();
         } catch (err) {
             alert("Could not delete: " + err.message);
         }
@@ -132,9 +161,17 @@ export default function DecisionsManager() {
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white"
                         placeholder="Any context about the decision" />
                 </div>
-                <Button type="submit" disabled={saving}>
-                    {saving ? "Saving..." : "Record decision"}
-                </Button>
+                <div className="flex gap-3">
+                    <Button type="submit" disabled={saving}>
+                        {saving ? "Saving..." : editingId ? "Update decision" : "Record decision"}
+                    </Button>
+                    {editingId && (
+                        <button type="button" onClick={handleCancelEdit}
+                            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                            Cancel
+                        </button>
+                    )}
+                </div>
             </form>
 
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow overflow-hidden">
@@ -162,7 +199,10 @@ export default function DecisionsManager() {
                                     </p>
                                     {d.notes && <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{d.notes}</p>}
                                 </div>
-                                <button onClick={() => handleDelete(d.id)} className="shrink-0 text-red-600 dark:text-red-400 hover:text-red-800 text-sm">Delete</button>
+                                <div className="shrink-0 flex gap-3">
+                                    <button onClick={() => handleEdit(d)} className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 text-sm">Edit</button>
+                                    <button onClick={() => handleDelete(d.id)} className="text-red-600 dark:text-red-400 hover:text-red-800 text-sm">Delete</button>
+                                </div>
                             </li>
                         ))}
                     </ul>

@@ -27,6 +27,7 @@ export default function InjuriesManager() {
     const [injuries, setInjuries] = useState([]);
     const [sports, setSports] = useState([]);
     const [form, setForm] = useState(emptyForm);
+    const [editingId, setEditingId] = useState(null);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
     const [houseFilter, setHouseFilter] = useState("all");
@@ -71,7 +72,7 @@ export default function InjuriesManager() {
         setError("");
         try {
             const house = houses.find((h) => h.key === form.houseKey);
-            const { error: insErr } = await supabase.from("injuries").insert({
+            const payload = {
                 personId: form.person ? form.person.id : null,
                 personName: form.personName.trim(),
                 houseKey: form.houseKey || null,
@@ -83,10 +84,16 @@ export default function InjuriesManager() {
                 notes: form.notes.trim(),
                 sportId: form.sportId || null,
                 severity: form.severity,
-                recordedBy: currentUser.uid,
-            });
-            if (insErr) throw insErr;
+            };
+            if (editingId) {
+                const { error: updErr } = await supabase.from("injuries").update(payload).eq("id", editingId);
+                if (updErr) throw updErr;
+            } else {
+                const { error: insErr } = await supabase.from("injuries").insert({ ...payload, recordedBy: currentUser.uid });
+                if (insErr) throw insErr;
+            }
             setForm(emptyForm);
+            setEditingId(null);
         } catch (err) {
             console.error("Error saving injury:", err);
             setError(err.message || "Could not save the injury record.");
@@ -95,11 +102,37 @@ export default function InjuriesManager() {
         }
     };
 
+    const handleEdit = (i) => {
+        const person = registrations.find((r) => r.id === i.personId) || (i.personId ? { id: i.personId, name: i.personName, houseKey: i.houseKey, house: i.house } : null);
+        setForm({
+            person,
+            personText: i.personName || "",
+            personName: i.personName || "",
+            houseKey: i.houseKey || "",
+            nature: i.nature || "",
+            medication: i.medication || "",
+            treatment: i.treatment || "",
+            incidentAt: i.incidentAt ? new Date(i.incidentAt).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+            notes: i.notes || "",
+            sportId: i.sportId || "",
+            severity: i.severity || "Minor",
+        });
+        setEditingId(i.id);
+        setError("");
+    };
+
+    const handleCancelEdit = () => {
+        setForm(emptyForm);
+        setEditingId(null);
+        setError("");
+    };
+
     const handleDelete = async (id) => {
         if (!window.confirm("Delete this injury record?")) return;
         try {
             const { error: delErr } = await supabase.from("injuries").delete().eq("id", id);
             if (delErr) throw delErr;
+            if (editingId === id) handleCancelEdit();
         } catch (err) {
             alert("Could not delete: " + err.message);
         }
@@ -166,9 +199,17 @@ export default function InjuriesManager() {
                     <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white" />
                 </div>
-                <Button type="submit" disabled={saving}>
-                    {saving ? "Saving..." : "Log injury"}
-                </Button>
+                <div className="flex gap-3">
+                    <Button type="submit" disabled={saving}>
+                        {saving ? "Saving..." : editingId ? "Update injury" : "Log injury"}
+                    </Button>
+                    {editingId && (
+                        <button type="button" onClick={handleCancelEdit}
+                            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                            Cancel
+                        </button>
+                    )}
+                </div>
             </form>
 
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow overflow-hidden">
@@ -205,7 +246,10 @@ export default function InjuriesManager() {
                                         <p className="text-xs text-gray-500 dark:text-gray-400">Severity: {i.severity || "Not recorded"}{i.sportId ? ` · ${sports.find((sport) => sport.id === i.sportId)?.name || "Activity"}` : ""}</p>
                                         {i.notes && <p className="text-xs italic text-gray-500 dark:text-gray-400 mt-1">{i.notes}</p>}
                                     </div>
-                                    <button onClick={() => handleDelete(i.id)} className="shrink-0 text-red-600 dark:text-red-400 hover:text-red-800 text-sm">Delete</button>
+                                    <div className="shrink-0 flex gap-3">
+                                        <button onClick={() => handleEdit(i)} className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 text-sm">Edit</button>
+                                        <button onClick={() => handleDelete(i.id)} className="text-red-600 dark:text-red-400 hover:text-red-800 text-sm">Delete</button>
+                                    </div>
                                 </div>
                             </li>
                         ))}
