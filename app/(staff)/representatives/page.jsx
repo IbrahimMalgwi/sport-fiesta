@@ -98,21 +98,64 @@ export default function RepresentativesPage() {
   if (!isAdmin && ownHouse === undefined) return <p className="p-8 text-center text-gray-500">Loading your house…</p>;
   if (!isAdmin && ownHouse === null) return <p className="p-8 text-center text-gray-500">Your staff registration isn&apos;t linked to a house yet, so representative selection isn&apos;t available. Contact an admin if this seems wrong.</p>;
 
-  return <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
-    <div><h1 className="text-3xl font-bold dark:text-white">House Representatives</h1>
-      <p className="text-gray-500">
-        {isAdmin ? "Select the eligible pool before an event begins." : <>Select the eligible pool for <span className="font-semibold" style={{ color: ownHouse.color }}>{ownHouse.name}</span> before an event begins.</>}
-      </p>
-    </div>
-    {error && <p className="text-red-600">{error}</p>}
-    <div className="grid sm:grid-cols-2 gap-4 bg-white dark:bg-gray-800 p-5 rounded-2xl shadow">
-      <select className="p-3 rounded-lg border dark:bg-gray-700" value={sportId} onChange={e => setSportId(e.target.value)}><option value="">Select event</option>{sportGroups.map(group => <optgroup key={group.name} label={group.name}>{group.items.map(s => <option key={s.id} value={s.id}>{s.name} · {s.category} · {s.ageCategory || "Open"}</option>)}</optgroup>)}</select>
-      {isAdmin ? (
-        <select className="p-3 rounded-lg border dark:bg-gray-700" value={houseKey} onChange={e => setHouseKey(e.target.value)}><option value="">All houses</option>{[...new Map(registrations.filter(p=>p.houseKey).map(p=>[p.houseKey,p.house])).entries()].map(([k,n])=><option key={k} value={k}>{n}</option>)}</select>
-      ) : (
-        <div className="p-3 rounded-lg border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 flex items-center">Your house: <span className="font-semibold ml-1" style={{ color: ownHouse.color }}>{ownHouse.name}</span></div>
+  return (
+    <div className="max-w-4xl mx-auto py-6 sm:py-8 px-3 sm:px-4 space-y-6">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">House Representatives</h1>
+        <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
+          {isAdmin ? "Select the eligible pool before an event begins." : <>Select the eligible pool for <span className="font-semibold" style={{ color: ownHouse.color }}>{ownHouse.name}</span> before an event begins.</>}
+        </p>
+      </div>
+      {error && <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl shadow">
+        <select className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm sm:text-base" value={sportId} onChange={e => setSportId(e.target.value)}>
+          <option value="">Select event</option>
+          {sportGroups.map(group => (
+            <optgroup key={group.name} label={group.name}>
+              {group.items.map(s => <option key={s.id} value={s.id}>{s.name} · {s.category} · {s.ageCategory || "Open"}</option>)}
+            </optgroup>
+          ))}
+        </select>
+        {isAdmin ? (
+          <select className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm sm:text-base" value={houseKey} onChange={e => setHouseKey(e.target.value)}>
+            <option value="">All houses</option>
+            {[...new Map(registrations.filter(p => p.houseKey).map(p => [p.houseKey, p.house])).entries()].map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+          </select>
+        ) : (
+          <div className="p-3 rounded-lg border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 flex items-center flex-wrap gap-1 text-sm sm:text-base">
+            Your house: <span className="font-semibold" style={{ color: ownHouse.color }}>{ownHouse.name}</span>
+          </div>
+        )}
+      </div>
+      {sportId && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <section>
+            <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Eligible participants</h2>
+            <div className="space-y-2">
+              {candidates.map(p => (
+                <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                  <span className="min-w-0 break-words text-sm sm:text-base text-gray-900 dark:text-white">{p.name} · {p.age} · {p.house}</span>
+                  <Button size="sm" onClick={() => add(p)} className="shrink-0">Select</Button>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section>
+            <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Selected representatives</h2>
+            <div className="space-y-2">
+              {selectedForSport.map(r => {
+                const p = registrations.find(p => p.id === r.personId);
+                return (
+                  <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                    <span className="min-w-0 break-words text-sm sm:text-base text-gray-900 dark:text-white">{p?.name || "Participant"} · {p?.house}</span>
+                    <button className="shrink-0 text-red-600 dark:text-red-400 hover:text-red-800 text-sm font-medium" onClick={() => remove(r.id)}>Remove</button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </div>
       )}
     </div>
-    {sportId && <div className="grid md:grid-cols-2 gap-6"><section><h2 className="font-semibold mb-2 dark:text-white">Eligible participants</h2>{candidates.map(p=><div key={p.id} className="flex justify-between items-center p-3 mb-2 bg-white dark:bg-gray-800 rounded-lg"><span>{p.name} · {p.age} · {p.house}</span><Button onClick={()=>add(p)}>Select</Button></div>)}</section><section><h2 className="font-semibold mb-2 dark:text-white">Selected representatives</h2>{selectedForSport.map(r=>{const p=registrations.find(p=>p.id===r.personId);return <div key={r.id} className="flex justify-between items-center p-3 mb-2 bg-white dark:bg-gray-800 rounded-lg"><span>{p?.name || "Participant"} · {p?.house}</span><button className="text-red-600" onClick={()=>remove(r.id)}>Remove</button></div>})}</section></div>}
-  </div>;
+  );
 }
