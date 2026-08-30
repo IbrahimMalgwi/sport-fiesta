@@ -13,9 +13,8 @@ import { createClient } from "@/lib/supabase/client";
 import useConfig from "@/hooks/useConfig";
 import { resolveHouses } from "@/utils/config";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Field, Input, Select } from "@/components/ui/Field";
+import { Field, Input } from "@/components/ui/Field";
 import Button from "@/components/ui/Button";
-import { STAFF_DESIGNATIONS } from "@/utils/config";
 
 const DEFAULT_POPUP_COLOR = "#4f46e5";
 
@@ -30,7 +29,7 @@ export default function StaffRegistration() {
         if (!currentUser) router.replace("/login");
     }, [currentUser, router]);
 
-    const [formData, setFormData] = useState({ name: "", phone: "", email: "", organization: "", designation: "", otherDesignation: "" });
+    const [formData, setFormData] = useState({ name: "", phone: "", email: "", organization: "" });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(null);
     const [errors, setErrors] = useState({});
@@ -71,8 +70,6 @@ export default function StaffRegistration() {
         if (!formData.email.trim()) newErrors.email = "Email is required";
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Please enter a valid email address";
         if (!formData.organization.trim()) newErrors.organization = "Organization is required";
-        if (!formData.designation) newErrors.designation = "Please select a designation";
-        else if (formData.designation === "Other" && !formData.otherDesignation.trim()) newErrors.otherDesignation = "Please specify your designation";
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -85,20 +82,21 @@ export default function StaffRegistration() {
             return;
         }
         if (!validateForm()) {
-            setTouched({ name: true, phone: true, email: true, organization: true, designation: true, otherDesignation: true });
+            setTouched({ name: true, phone: true, email: true, organization: true });
             return;
         }
         setLoading(true);
         try {
             // Every staff registration is house-eligible now; the balanced
             // pick and the insert happen together, atomically, inside this RPC.
+            // This form only registers Marshals, so the designation is fixed.
             const { data: inserted, error } = await supabase.rpc("register_staff", {
                 p_name: formData.name,
                 p_phone: formData.phone,
                 p_email: formData.email,
                 p_organization: formData.organization,
-                p_designation: formData.designation,
-                p_other_designation: formData.otherDesignation,
+                p_designation: "Marshal",
+                p_other_designation: "",
                 p_submitted_by_uid: currentUser.uid,
                 p_submitted_by_email: currentUser.email,
                 p_submitted_by_name: currentUser.displayName || "Unknown",
@@ -109,7 +107,7 @@ export default function StaffRegistration() {
             if (error) throw error;
             setSuccess({
                 name: formData.name,
-                designation: formData.designation === "Other" ? formData.otherDesignation : formData.designation,
+                designation: "Marshal",
                 assigned: !!inserted?.assigned,
                 house: inserted?.house || null,
                 color: inserted?.color || DEFAULT_POPUP_COLOR,
@@ -127,24 +125,20 @@ export default function StaffRegistration() {
     const handleChange = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
         if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
-        if (field === "designation" && value !== "Other") setFormData((prev) => ({ ...prev, otherDesignation: "" }));
     };
 
     const handleBlur = (field) => setTouched((prev) => ({ ...prev, [field]: true }));
 
     const handleReset = () => {
-        setFormData({ name: "", phone: "", email: "", organization: "", designation: "", otherDesignation: "" });
+        setFormData({ name: "", phone: "", email: "", organization: "" });
         setErrors({});
         setTouched({});
         localStorage.removeItem("staffRegistrationDraft");
     };
 
     const calculateProgress = () => {
-        const requiredFields = ["name", "phone", "email", "organization", "designation"];
-        const completed = requiredFields.filter((field) => {
-            if (field === "designation" && formData.designation === "Other") return formData.otherDesignation.trim();
-            return formData[field];
-        }).length;
+        const requiredFields = ["name", "phone", "email", "organization"];
+        const completed = requiredFields.filter((field) => formData[field]).length;
         return (completed / requiredFields.length) * 100;
     };
 
@@ -154,8 +148,8 @@ export default function StaffRegistration() {
                 <Card>
                     <CardContent className="space-y-4">
                         <div className="text-center">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-indigo-700 dark:text-indigo-400 mb-2">Register Counselor/Marshal</h2>
-                            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Register as Counselor, Marshal, or Support Staff</p>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-indigo-700 dark:text-indigo-400 mb-2">Register as Marshal</h2>
+                            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Register as an event Marshal</p>
                             <div className="mt-6">
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Form Progress</span>
@@ -188,19 +182,6 @@ export default function StaffRegistration() {
                                 <Input type="text" value={formData.organization} onChange={(e) => handleChange("organization", e.target.value)} onBlur={() => handleBlur("organization")}
                                     error={touched.organization && errors.organization} placeholder="Enter organization name" />
                             </Field>
-                            <Field label="Designation" required error={touched.designation && errors.designation}>
-                                <Select value={formData.designation} onChange={(e) => handleChange("designation", e.target.value)} onBlur={() => handleBlur("designation")}
-                                    error={touched.designation && errors.designation}>
-                                    <option value="">Select Designation</option>
-                                    {STAFF_DESIGNATIONS.map((option) => (<option key={option} value={option}>{option}</option>))}
-                                </Select>
-                            </Field>
-                            {formData.designation === "Other" && (
-                                <Field label="Specify Designation" required error={touched.otherDesignation && errors.otherDesignation}>
-                                    <Input type="text" value={formData.otherDesignation} onChange={(e) => handleChange("otherDesignation", e.target.value)} onBlur={() => handleBlur("otherDesignation")}
-                                        error={touched.otherDesignation && errors.otherDesignation} placeholder="Enter your designation" />
-                                </Field>
-                            )}
                             <div className="flex flex-col sm:flex-row gap-3 pt-4">
                                 <Button type="button" variant="secondary" onClick={handleReset} disabled={loading} fullWidth>Clear Form</Button>
                                 <Button type="submit" disabled={loading} fullWidth size="lg">

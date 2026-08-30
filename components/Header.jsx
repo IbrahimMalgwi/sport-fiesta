@@ -51,7 +51,7 @@ export default function Header() {
                                 📝 Register Participant
                             </NavLink>
                             <NavLink to="/staff-registration" currentPath={pathname}>
-                                👥 Register Counselor/Marshal
+                                👥 Register Marshal
                             </NavLink>
 
                             {/* Sports Fiesta operational modules (staff + admin) */}
@@ -238,7 +238,7 @@ export default function Header() {
                                 📝 Register Participant
                             </MobileNavLink>
                             <MobileNavLink to="/staff-registration" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
-                                👥 Register Counselor/Marshal
+                                👥 Register Marshal
                             </MobileNavLink>
 
                             {/* Sports Fiesta modules for mobile */}
