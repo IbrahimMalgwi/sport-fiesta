@@ -1,34 +1,35 @@
 "use client";
 // app/(staff)/results/page.jsx — ported from src/pages/ResultsForm.jsx
+//
+// Results are house-only: a Marshal/Admin records which house placed 1st
+// (and, for medal-eligible activities, 2nd/3rd) — no individual participant
+// is tagged. This is separate from representative selection
+// (public.event_representatives, see app/(staff)/representatives/page.jsx),
+// which still tracks who competes; this form just records who won.
 import React, { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import useConfig from "@/hooks/useConfig";
-import useRegistrations from "@/hooks/useRegistrations";
 import { resolveHouses } from "@/utils/config";
-import { getHouseKeyByName } from "@/utils/houseMapping";
-import RegistrantPicker from "@/components/RegistrantPicker";
 import Button from "@/components/ui/Button";
 import { canMarshalEvents } from "@/utils/config";
 
-const MEDALS = [
-    { value: "gold", label: "🥇 Gold" },
-    { value: "silver", label: "🥈 Silver" },
-    { value: "bronze", label: "🥉 Bronze" },
+const PLACES = [
+    { medal: "gold", field: "goldHouseKey", label: "🥇 1st place house" },
+    { medal: "silver", field: "silverHouseKey", label: "🥈 2nd place house" },
+    { medal: "bronze", field: "bronzeHouseKey", label: "🥉 3rd place house" },
 ];
 
-const emptyForm = { sportId: "", medal: "gold", houseKey: "", person: null, personText: "" };
+const emptyForm = { sportId: "", goldHouseKey: "", silverHouseKey: "", bronzeHouseKey: "", winningHouseKey: "" };
 
 export default function ResultsForm() {
     const { currentUser, userRole } = useAuth();
     const { config } = useConfig();
-    const { registrations } = useRegistrations();
     const houses = resolveHouses(config);
     const supabase = createClient();
 
     const [sports, setSports] = useState([]);
     const [results, setResults] = useState([]);
-    const [representatives, setRepresentatives] = useState([]);
     const [form, setForm] = useState(emptyForm);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
@@ -51,14 +52,6 @@ export default function ResultsForm() {
             .subscribe();
         return () => { active = false; supabase.removeChannel(channel); };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    useEffect(() => {
-        const load = async () => {
-            const { data } = await supabase.from("event_representatives").select("*").eq("edition", config.currentEdition);
-            setRepresentatives(data || []);
-        };
-        load();
-    }, [config.currentEdition]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         let active = true;
@@ -91,48 +84,53 @@ export default function ResultsForm() {
         return groups;
     }, [sports]);
 
-    const eligiblePersons = useMemo(() => {
-        const pool = representatives.filter((r) => r.sportId === form.sportId);
-        return registrations.filter((r) => {
-            if (!pool.some((entry) => entry.personId === r.id)) return false;
-            if (form.houseKey) {
-                const rHouseKey = r.houseKey || getHouseKeyByName(r.house);
-                if (rHouseKey !== form.houseKey) return false;
-            }
-            if (selectedSport?.minAge != null && (r.age == null || r.age < selectedSport.minAge)) return false;
-            if (selectedSport?.maxAge != null && (r.age == null || r.age > selectedSport.maxAge)) return false;
-            return true;
-        });
-    }, [registrations, representatives, form.houseKey, form.sportId, selectedSport]);
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.sportId || !form.houseKey || !form.person) {
-            setError("Choose an activity, house, and a pre-selected representative.");
+        setError("");
+        if (!form.sportId) {
+            setError("Choose an activity.");
             return;
         }
+
+        let placements;
+        if (medalEligible) {
+            if (!form.goldHouseKey) {
+                setError("Choose the 1st place house.");
+                return;
+            }
+            placements = PLACES
+                .filter((p) => form[p.field])
+                .map((p) => ({ medal: p.medal, houseKey: form[p.field] }));
+            const houseKeys = placements.map((p) => p.houseKey);
+            if (new Set(houseKeys).size !== houseKeys.length) {
+                setError("The same house can't be picked for more than one place.");
+                return;
+            }
+        } else {
+            if (!form.winningHouseKey) {
+                setError("Choose the winning house.");
+                return;
+            }
+            placements = [{ medal: null, houseKey: form.winningHouseKey }];
+        }
+
         setSaving(true);
-        setError("");
         try {
-            const house = houses.find((h) => h.key === form.houseKey);
-            const medal = medalEligible ? form.medal : null;
-            const points = medalEligible ? (config.medalPoints[form.medal] ?? 0) : 0;
-            const representative = representatives.find((r) => r.sportId === form.sportId && r.personId === form.person.id);
-            if (!representative) throw new Error("This participant was not selected as a representative for this event.");
-            const { error: insErr } = await supabase.from("results").insert({
-                sportId: selectedSport.id,
-                sportName: selectedSport.name,
-                category: selectedSport.category,
-                houseKey: house.key,
-                house: house.name,
-                medal,
-                points,
-                personId: form.person ? form.person.id : null,
-                personName: form.person ? (form.person.name || form.person.fullName) : (form.personText || null),
-                edition: config.currentEdition,
-                recordedBy: currentUser.uid,
-                representativeId: representative.id,
+            const rows = placements.map(({ medal, houseKey }) => {
+                const house = houses.find((h) => h.key === houseKey);
+                return {
+                    sportId: selectedSport.id,
+                    sportName: selectedSport.name,
+                    category: selectedSport.category,
+                    houseKey: house.key,
+                    house: house.name,
+                    medal,
+                    points: medal ? (config.medalPoints[medal] ?? 0) : 0,
+                    edition: config.currentEdition,
+                    recordedBy: currentUser.uid,
+                };
             });
+            const { error: insErr } = await supabase.from("results").insert(rows);
             if (insErr) throw insErr;
             setForm(emptyForm);
             setSuccess(true);
@@ -170,7 +168,7 @@ export default function ResultsForm() {
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activity *</label>
-                    <select value={form.sportId} onChange={(e) => setForm({ ...form, sportId: e.target.value })}
+                    <select value={form.sportId} onChange={(e) => setForm({ ...emptyForm, sportId: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white" required>
                         <option value="">Select an activity</option>
                         {sportGroups.map((group) => (
@@ -188,42 +186,35 @@ export default function ResultsForm() {
                     )}
                 </div>
 
-                <div className={`grid grid-cols-1 gap-4 ${medalEligible ? "sm:grid-cols-2" : ""}`}>
+                {form.sportId && (medalEligible ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {PLACES.map((p) => (
+                            <div key={p.field}>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    {p.label}{p.medal === "gold" ? " *" : " (optional)"}
+                                </label>
+                                <select value={form[p.field]} onChange={(e) => setForm({ ...form, [p.field]: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white">
+                                    <option value="">{p.medal === "gold" ? "Select house" : "No house / not applicable"}</option>
+                                    {houses.map((h) => (<option key={h.key} value={h.key} style={{ color: h.color, fontWeight: 600 }}>{h.name}</option>))}
+                                </select>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">+{config.medalPoints[p.medal] ?? 0} pts</p>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Winning house *</label>
-                        <select value={form.houseKey} onChange={(e) => setForm({ ...form, houseKey: e.target.value })}
+                        <select value={form.winningHouseKey} onChange={(e) => setForm({ ...form, winningHouseKey: e.target.value })}
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white" required>
                             <option value="">Select house</option>
                             {houses.map((h) => (<option key={h.key} value={h.key} style={{ color: h.color, fontWeight: 600 }}>{h.name}</option>))}
                         </select>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">This activity is a Mind &amp; Social Game — no medal or points are recorded.</p>
                     </div>
-                    {medalEligible ? (
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Medal *</label>
-                            <select value={form.medal} onChange={(e) => setForm({ ...form, medal: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white">
-                                {MEDALS.map((m) => (<option key={m.value} value={m.value}>{m.label} (+{config.medalPoints[m.value] ?? 0} pts)</option>))}
-                            </select>
-                        </div>
-                    ) : (
-                        form.sportId && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 self-end pb-2">This activity is a Mind &amp; Social Game — no medal or points are recorded.</p>
-                        )
-                    )}
-                </div>
+                ))}
 
-                <RegistrantPicker items={eligiblePersons} value={form.personText}
-                    onSelect={(person, text) => setForm({ ...form, person, personText: text })}
-                    label="Placed representative *"
-                    placeholder={form.houseKey ? "Select from the pre-event representative pool" : "Choose a winning house first"} />
-                {form.sportId && eligiblePersons.length === 0 && <p className="text-xs text-amber-600 dark:text-amber-400 -mt-2">No representatives have been selected for this event and house.</p>}
-                {selectedSport && (selectedSport.minAge != null || selectedSport.maxAge != null) && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
-                        This activity is restricted to ages {selectedSport.minAge ?? "0"}–{selectedSport.maxAge ?? "∞"}; the list above is filtered accordingly.
-                    </p>
-                )}
-
-                <Button type="submit" disabled={saving}>
+                <Button type="submit" disabled={saving || !form.sportId}>
                     {saving ? "Recording..." : "Record result"}
                 </Button>
             </form>
@@ -241,7 +232,7 @@ export default function ResultsForm() {
                                 <div className="text-gray-900 dark:text-white min-w-0">
                                     <span className="mr-2">{medalEmoji[r.medal] || "🎯"}</span>
                                     <span className="font-medium">{r.sportName}</span>
-                                    <span className="text-gray-500 dark:text-gray-400"> ({r.category}) — {r.house}{r.personName ? ` — ${r.personName}` : ""}</span>
+                                    <span className="text-gray-500 dark:text-gray-400"> ({r.category}) — {r.house}</span>
                                 </div>
                                 <button onClick={() => handleDelete(r.id)} className="shrink-0 text-red-600 dark:text-red-400 hover:text-red-800">Delete</button>
                             </li>

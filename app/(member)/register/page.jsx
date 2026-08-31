@@ -44,7 +44,7 @@ export default function RegistrationForm() {
     // assigned a house there too now, drawn from the same balanced pool as
     // participants (see completeRegistration below).
     const [formData, setFormData] = useState({
-        name: "", age: "", sex: "", religion: "",
+        name: "", age: "", sex: "", religion: "", church: "", otherChurch: "",
         phone: "", email: "", fiestaAttendance: [],
     });
 
@@ -152,6 +152,7 @@ export default function RegistrationForm() {
         else if (formData.age < 1 || formData.age > 100) newErrors.age = "Please enter a valid age (1-100)";
         if (!formData.sex) newErrors.sex = "Please select a gender";
         if (!formData.religion) newErrors.religion = "Please select a religion";
+        if (formData.church === "Other" && !formData.otherChurch.trim()) newErrors.otherChurch = "Please specify your church";
         if (formData.phone && !/^\d{10,15}$/.test(formData.phone)) newErrors.phone = "Please enter a valid phone number";
         if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Please enter a valid email address";
         setErrors(newErrors);
@@ -171,7 +172,7 @@ export default function RegistrationForm() {
         e.preventDefault();
         if (loading) return;
         if (!validateForm()) {
-            setTouched({ name: true, age: true, sex: true, religion: true, phone: true, email: true });
+            setTouched({ name: true, age: true, sex: true, religion: true, otherChurch: true, phone: true, email: true });
             return;
         }
         setLoading(true);
@@ -204,11 +205,13 @@ export default function RegistrationForm() {
             // The balanced min-count/random-tiebreak pick and the insert
             // happen together, atomically, inside this RPC — see
             // supabase/migrations/0009_atomic_house_assignment.sql.
+            const church = formData.church === "Other" ? formData.otherChurch.trim() : formData.church;
             const { data: inserted, error } = await supabase.rpc("register_participant", {
                 p_name: formData.name,
                 p_age: age,
                 p_sex: formData.sex,
                 p_religion: formData.religion,
+                p_church: church || null,
                 p_phone: formData.phone || null,
                 p_email: formData.email || null,
                 p_fiesta_attendance: [...new Set([...(Array.isArray(formData.fiestaAttendance) ? formData.fiestaAttendance : []), currentEdition])],
@@ -254,6 +257,10 @@ export default function RegistrationForm() {
     const handleChange = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
         if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
+        if (field === "church" && value !== "Other") {
+            setFormData((prev) => ({ ...prev, otherChurch: "" }));
+            if (errors.otherChurch) setErrors((prev) => ({ ...prev, otherChurch: "" }));
+        }
         if (field === "name" || field === "age" || field === "sex") {
             debouncedDuplicateCheck(
                 field === "name" ? value : formData.name,
@@ -267,7 +274,7 @@ export default function RegistrationForm() {
 
     const handleReset = () => {
         setFormData({
-            name: "", age: "", sex: "", religion: "",
+            name: "", age: "", sex: "", religion: "", church: "", otherChurch: "",
             phone: "", email: "", fiestaAttendance: [],
         });
         setErrors({});
@@ -355,6 +362,22 @@ export default function RegistrationForm() {
                                     <option value="Others">Others</option>
                                 </Select>
                             </Field>
+
+                            <Field label="Church (Optional)">
+                                <Select value={formData.church} onChange={(e) => handleChange("church", e.target.value)} onBlur={() => handleBlur("church")}
+                                    aria-label="Church">
+                                    <option value="">Select Church</option>
+                                    {config.churches.map((c) => (<option key={c} value={c}>{c}</option>))}
+                                    <option value="Other">Other</option>
+                                </Select>
+                            </Field>
+                            {formData.church === "Other" && (
+                                <Field label="Specify Church" required error={touched.otherChurch && errors.otherChurch}>
+                                    <Input type="text" placeholder="Enter your church" value={formData.otherChurch}
+                                        onChange={(e) => handleChange("otherChurch", e.target.value)} onBlur={() => handleBlur("otherChurch")}
+                                        error={touched.otherChurch && errors.otherChurch} />
+                                </Field>
+                            )}
 
                             <Field label="Phone (Optional)" error={touched.phone && errors.phone}>
                                 <Input type="tel" placeholder="Enter phone number" value={formData.phone}

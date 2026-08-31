@@ -79,6 +79,20 @@ In the Supabase dashboard, open **SQL Editor** and run, in order:
     insert/delete RLS so Marshals/Counsellors can only select/remove
     representatives for their own house (Admins stay unrestricted); also
     extends that access from Marshal-only to Marshal + Counsellor.
+12. `supabase/migrations/0014_add_church_field.sql` — adds a `church` text
+    column to `public.registrations` and a matching `p_church` parameter on
+    `public.register_participant()`. The Participant registration form's
+    Church dropdown (options admin-managed via `app_config.settings.churches`,
+    edited on `/admin/settings`) resolves an "Other" selection down to the
+    typed value client-side before calling the RPC, so this one column always
+    holds the final name either way.
+13. `supabase/migrations/0015_house_only_results.sql` — simplifies result
+    recording to house-only: drops the `validate_result_representative`
+    trigger/function and relaxes `results_insert_marshal` so a result no
+    longer has to reference a specific representative. `results.personId` /
+    `personName` / `representativeId` stay on the table (nullable) so old
+    rows keep their data; new rows just leave them null. Representative
+    selection itself (`public.event_representatives`) is untouched.
 
 (Or, with the Supabase CLI: `supabase link` then `supabase db push`.)
 

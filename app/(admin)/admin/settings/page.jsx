@@ -29,6 +29,7 @@ export default function SettingsManager() {
                 roles: cfg.registrantRoles.join(", "),
                 currentEdition: cfg.currentEdition,
                 previousEditions: cfg.previousEditions.join(", "),
+                churches: cfg.churches.join(", "),
                 medalPoints: { ...cfg.medalPoints },
                 houseOverrides: DEFAULT_HOUSES.reduce((acc, h) => {
                     const o = cfg.houseOverrides?.[h.key] || {};
@@ -56,6 +57,7 @@ export default function SettingsManager() {
                 registrantRoles: parseList(form.roles),
                 currentEdition: form.currentEdition.trim() || DEFAULT_CONFIG.currentEdition,
                 previousEditions: parseList(form.previousEditions),
+                churches: parseList(form.churches),
                 medalPoints: {
                     gold: Number(form.medalPoints.gold) || 0,
                     silver: Number(form.medalPoints.silver) || 0,
@@ -114,6 +116,13 @@ export default function SettingsManager() {
                             <label className={labelCls}>Previous editions (comma-separated)</label>
                             <input type="text" value={form.previousEditions} onChange={(e) => setForm({ ...form, previousEditions: e.target.value })} className={input} />
                         </div>
+                    </div>
+                    <div>
+                        <label className={labelCls}>Churches (comma-separated)</label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                            Options offered on the Participant registration form&rsquo;s Church dropdown. &ldquo;Other&rdquo; is always added automatically.
+                        </p>
+                        <input type="text" value={form.churches} onChange={(e) => setForm({ ...form, churches: e.target.value })} className={input} />
                     </div>
                 </div>
 

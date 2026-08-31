@@ -23,12 +23,17 @@ export default function LoginPage() {
             setLoading(true);
             const { error: signInError } = await login(email, password);
             if (signInError) throw signInError;
-            // Honor a ?from= redirect set by middleware, else go home.
+            // Honor a ?from= redirect set by middleware (bounced from a
+            // protected route while signed out), else land on the Dashboard
+            // directly — don't push "/" and hope middleware bounces us to
+            // /dashboard, since that bounce is skipped on a transient auth
+            // verification failure (see lib/supabase/middleware.js), which
+            // would strand a freshly-signed-in user on the public landing page.
             const from =
                 typeof window !== "undefined"
                     ? new URLSearchParams(window.location.search).get("from")
                     : null;
-            router.push(from || "/");
+            router.push(from || "/dashboard");
         } catch (err) {
             setError("Failed to sign in: " + err.message);
         }

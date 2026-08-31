@@ -13,11 +13,14 @@ export default function EditRegistrationForm({ registration, onSave, onCancel })
         label: `Sports Fiesta ${v}`,
     }));
 
+    const isKnownChurch = registration.church && config.churches.includes(registration.church);
     const [formData, setFormData] = useState({
         name: registration.name || "",
         age: registration.age || "",
         sex: registration.sex || "",
         religion: registration.religion || "",
+        church: registration.church ? (isKnownChurch ? registration.church : "Other") : "",
+        otherChurch: registration.church && !isKnownChurch ? registration.church : "",
         phone: registration.phone || "",
         email: registration.email || "",
         fiestaAttendance: registration.fiestaAttendance
@@ -34,6 +37,7 @@ export default function EditRegistrationForm({ registration, onSave, onCancel })
         if (!formData.age) newErrors.age = "Age is required";
         if (!formData.sex) newErrors.sex = "Please select a gender";
         if (!formData.religion) newErrors.religion = "Please select a religion";
+        if (formData.church === "Other" && !formData.otherChurch.trim()) newErrors.otherChurch = "Please specify the church";
         if (formData.phone && !/^\d{10,15}$/.test(formData.phone)) {
             newErrors.phone = "Please enter a valid phone number";
         }
@@ -59,8 +63,10 @@ export default function EditRegistrationForm({ registration, onSave, onCancel })
         if (!validateForm()) return;
         setLoading(true);
         try {
+            const { otherChurch, ...rest } = formData;
             const dataToSave = {
-                ...formData,
+                ...rest,
+                church: formData.church === "Other" ? otherChurch.trim() : formData.church,
                 fiestaAttendance: Array.isArray(formData.fiestaAttendance)
                     ? [...formData.fiestaAttendance, currentEdition]
                     : [currentEdition],
@@ -76,6 +82,10 @@ export default function EditRegistrationForm({ registration, onSave, onCancel })
     const handleChange = (field, value) => {
         setFormData({ ...formData, [field]: value });
         if (errors[field]) setErrors({ ...errors, [field]: "" });
+        if (field === "church" && value !== "Other") {
+            setFormData((prev) => ({ ...prev, otherChurch: "" }));
+            if (errors.otherChurch) setErrors((prev) => ({ ...prev, otherChurch: "" }));
+        }
     };
 
     return (
@@ -116,6 +126,20 @@ export default function EditRegistrationForm({ registration, onSave, onCancel })
                     <option value="Others">Others</option>
                 </Select>
             </Field>
+
+            <Field label="Church (Optional)">
+                <Select value={formData.church} onChange={(e) => handleChange("church", e.target.value)}>
+                    <option value="">Select Church</option>
+                    {config.churches.map((c) => (<option key={c} value={c}>{c}</option>))}
+                    <option value="Other">Other</option>
+                </Select>
+            </Field>
+            {formData.church === "Other" && (
+                <Field label="Specify Church" required error={errors.otherChurch}>
+                    <Input type="text" placeholder="Enter the church" value={formData.otherChurch}
+                        onChange={(e) => handleChange("otherChurch", e.target.value)} error={errors.otherChurch} />
+                </Field>
+            )}
 
             <Field label="Phone (Optional)" error={errors.phone}>
                 <Input type="tel" placeholder="Enter phone number" value={formData.phone}

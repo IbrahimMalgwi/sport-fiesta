@@ -121,21 +121,6 @@ export default function CentralDashboard() {
         return rows.sort((a, b) => b.points - a.points);
     }, [filteredResults, houses]);
 
-    const leaderboard = useMemo(() => {
-        const byPerson = {};
-        filteredResults.forEach((res) => {
-            const key = res.personId || res.personName;
-            if (!key) return;
-            if (!byPerson[key]) byPerson[key] = { name: res.personName || "Unknown", gold: 0, silver: 0, bronze: 0, total: 0 };
-            const p = byPerson[key];
-            if (res.medal === "gold") p.gold += 1;
-            else if (res.medal === "silver") p.silver += 1;
-            else if (res.medal === "bronze") p.bronze += 1;
-            p.total += 1;
-        });
-        return Object.values(byPerson).sort((a, b) => b.gold - a.gold || b.total - a.total).slice(0, 15);
-    }, [filteredResults]);
-
     const prevCount = (reg) => (reg.fiestaAttendance || []).filter((e) => previousEditions.includes(e)).length;
 
     const attendanceBuckets = useMemo(() => {
@@ -290,8 +275,8 @@ export default function CentralDashboard() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 sm:p-6">
+            <div className="mb-6">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 sm:p-6 max-w-2xl">
                     <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4">House medal standings</h2>
                     <div className="overflow-x-auto mb-4">
                         <table className="min-w-full text-sm">
@@ -315,32 +300,6 @@ export default function CentralDashboard() {
                         </table>
                     </div>
                     <div className="h-48 sm:h-56"><Doughnut data={scoreDoughnut} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { color: chartText } } } }} /></div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 sm:p-6">
-                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4">Personal medal leaderboard</h2>
-                    {leaderboard.length === 0 ? (
-                        <p className="text-gray-500 dark:text-gray-400 text-center py-8">No individual medals recorded yet.</p>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full text-sm">
-                                <thead>
-                                    <tr className="text-left text-gray-500 dark:text-gray-400">
-                                        <th className="py-2">#</th><th>Name</th><th>🥇</th><th>🥈</th><th>🥉</th><th>Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {leaderboard.map((p, i) => (
-                                        <tr key={p.name + i} className="border-t border-gray-100 dark:border-gray-700">
-                                            <td className="py-2 text-gray-500">{i + 1}</td>
-                                            <td className="font-medium text-gray-900 dark:text-white whitespace-nowrap">{p.name}</td>
-                                            <td>{p.gold}</td><td>{p.silver}</td><td>{p.bronze}</td>
-                                            <td className="font-bold">{p.total}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
                 </div>
             </div>
 

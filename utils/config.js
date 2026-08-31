@@ -30,6 +30,10 @@ export const DEFAULT_CONFIG = {
     currentEdition: "5.0",
     previousEditions: ["1.0", "2.0", "3.0", "4.0"],
     registrantRoles: ["Participant", "Marshal", "Counselor"],
+    // Admin-managed options for the Participant registration form's Church
+    // dropdown (see /admin/settings). Empty until an admin populates it —
+    // the form still works meanwhile since "Other" is always offered.
+    churches: [],
     houseAssignmentCutoff: null,
     medalPoints: { gold: 5, silver: 3, bronze: 1 },
     houseOverrides: null,

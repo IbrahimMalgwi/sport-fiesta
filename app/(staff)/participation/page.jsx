@@ -6,6 +6,11 @@
 // current editions), cross-referenced with any result recorded for it. Not
 // house-scoped — unlike representative selection, the task only asked for
 // scoping there, so lookup covers every Teen regardless of house.
+//
+// Results are recorded house-only (see app/(staff)/results/page.jsx) — a
+// result row no longer names a participant, so "did this Teen's activity
+// place?" is answered by matching sportId + edition + the Teen's own
+// houseKey from their representative-selection row, not by personId.
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,12 +39,18 @@ export default function ParticipationLookupPage() {
         if (!person) { setReps([]); setResults([]); return; }
         let active = true;
         setLoading(true);
-        Promise.all([
-            supabase.from("event_representatives").select("*").eq("personId", person.id),
-            supabase.from("results").select("*").eq("personId", person.id),
-        ]).then(([{ data: r }, { data: res }]) => {
+        supabase.from("event_representatives").select("*").eq("personId", person.id).then(async ({ data: r }) => {
             if (!active) return;
-            setReps(r || []);
+            const reps = r || [];
+            setReps(reps);
+            if (reps.length === 0) { setResults([]); setLoading(false); return; }
+            // Results are house-only now (no personId to match on) — fetch by
+            // this Teen's own edition/house combinations from their
+            // representative rows, then match per-activity in activityRows.
+            const editions = [...new Set(reps.map((x) => x.edition))];
+            const houseKeys = [...new Set(reps.map((x) => x.houseKey))];
+            const { data: res } = await supabase.from("results").select("*").in("edition", editions).in("houseKey", houseKeys);
+            if (!active) return;
             setResults((res || []).slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
             setLoading(false);
         });
@@ -49,10 +60,12 @@ export default function ParticipationLookupPage() {
     const sportById = useMemo(() => Object.fromEntries(sports.map((s) => [s.id, s])), [sports]);
 
     // One row per activity the Teen was ever selected to represent, joined
-    // with a matching result (if one has been recorded for it).
+    // with a matching result for their OWN house in that activity/edition
+    // (if one has been recorded) — this shows "did my house place," not
+    // individual credit, since results no longer name a participant.
     const activityRows = useMemo(() => reps.map((r) => {
         const sport = sportById[r.sportId];
-        const result = results.find((res) => res.sportId === r.sportId && res.edition === r.edition) || null;
+        const result = results.find((res) => res.sportId === r.sportId && res.edition === r.edition && res.houseKey === r.houseKey) || null;
         return {
             key: r.id,
             sportName: sport?.name || result?.sportName || "Unknown activity",
@@ -61,14 +74,6 @@ export default function ParticipationLookupPage() {
             result,
         };
     }), [reps, sportById, results]);
-
-    // Results with no matching representative row (e.g. recorded before this
-    // Teen was formally selected as a representative) — shown separately so
-    // nothing is silently dropped from the lookup.
-    const orphanResults = useMemo(
-        () => results.filter((res) => !reps.some((r) => r.sportId === res.sportId && r.edition === res.edition)),
-        [results, reps]
-    );
 
     if (!canSelectRepresentatives(userRole)) return <p className="p-8 text-center">Only Marshals, Counsellors, and Admins can look up participation.</p>;
 
@@ -94,7 +99,7 @@ export default function ParticipationLookupPage() {
 
                     {loading ? (
                         <p className="text-center py-10 text-gray-500 dark:text-gray-400">Loading…</p>
-                    ) : activityRows.length === 0 && orphanResults.length === 0 ? (
+                    ) : activityRows.length === 0 ? (
                         <p className="text-center py-10 text-gray-500 dark:text-gray-400">No activity participation found for this Teen.</p>
                     ) : (
                         <ul className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -107,22 +112,9 @@ export default function ParticipationLookupPage() {
                                     <div className="text-gray-700 dark:text-gray-200">
                                         {row.result
                                             ? (row.result.medal
-                                                ? `${MEDAL_EMOJI[row.result.medal] || ""} ${row.result.medal} (+${row.result.points || 0} pts)`
-                                                : "Participated — no medal")
+                                                ? `${MEDAL_EMOJI[row.result.medal] || ""} ${row.result.medal} for ${row.result.house} (+${row.result.points || 0} pts)`
+                                                : `No medal — ${row.result.house} competed`)
                                             : "Selected — no result recorded yet"}
-                                    </div>
-                                </li>
-                            ))}
-                            {orphanResults.map((res) => (
-                                <li key={res.id} className="px-4 sm:px-6 py-3 text-sm flex flex-wrap items-center justify-between gap-2">
-                                    <div>
-                                        <span className="font-medium text-gray-900 dark:text-white">{res.sportName}</span>
-                                        <span className="text-gray-500 dark:text-gray-400"> ({res.category}) — Edition {res.edition}</span>
-                                    </div>
-                                    <div className="text-gray-700 dark:text-gray-200">
-                                        {res.medal
-                                            ? `${MEDAL_EMOJI[res.medal] || ""} ${res.medal} (+${res.points || 0} pts)`
-                                            : "Participated — no medal"}
                                     </div>
                                 </li>
                             ))}
