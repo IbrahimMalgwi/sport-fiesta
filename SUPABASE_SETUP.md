@@ -93,6 +93,10 @@ In the Supabase dashboard, open **SQL Editor** and run, in order:
     `personName` / `representativeId` stay on the table (nullable) so old
     rows keep their data; new rows just leave them null. Representative
     selection itself (`public.event_representatives`) is untouched.
+14. `supabase/migrations/0016_seed_churches.sql` — seeds
+    `app_config.settings.churches` with the known church list, but only when
+    it's still unset/empty, so it never overwrites an admin's edits made on
+    `/admin/settings`.
 
 (Or, with the Supabase CLI: `supabase link` then `supabase db push`.)
 

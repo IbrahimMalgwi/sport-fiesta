@@ -31,9 +31,23 @@ export const DEFAULT_CONFIG = {
     previousEditions: ["1.0", "2.0", "3.0", "4.0"],
     registrantRoles: ["Participant", "Marshal", "Counselor"],
     // Admin-managed options for the Participant registration form's Church
-    // dropdown (see /admin/settings). Empty until an admin populates it —
-    // the form still works meanwhile since "Other" is always offered.
-    churches: [],
+    // dropdown (see /admin/settings). Seeded with the known churches below;
+    // an admin can edit the list at any time, and "Other" is always offered.
+    churches: [
+        "National headquarters",
+        "Fountain of the living word church",
+        "FGC Akoka",
+        "FGC Iwaya 1",
+        "Shepherd courts",
+        "Christ Treasured Church",
+        "FGC Yabatech",
+        "FGC Makoko headquarters",
+        "FGC Ajayi",
+        "The Father's place",
+        "FGC Ebutemeta",
+        "FGC Tejuosho",
+        "Oak house",
+    ],
     houseAssignmentCutoff: null,
     medalPoints: { gold: 5, silver: 3, bronze: 1 },
     houseOverrides: null,
