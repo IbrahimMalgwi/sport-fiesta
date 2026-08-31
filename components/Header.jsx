@@ -8,14 +8,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { canManageEvents, canMarshalEvents, canRecordDecisions, canSelectRepresentatives } from "@/utils/config";
+import { canManageEvents, canViewSports, canMarshalEvents, canRecordDecisions, canSelectRepresentatives } from "@/utils/config";
 
 export default function Header() {
     const { currentUser, logout, userRole } = useAuth();
     const { isDark, toggleTheme } = useTheme();
     const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const showFiestaMenu = canManageEvents(userRole) || canMarshalEvents(userRole) || canRecordDecisions(userRole);
+    const showFiestaMenu = canManageEvents(userRole) || canViewSports(userRole) || canMarshalEvents(userRole) || canRecordDecisions(userRole);
 
     // Close mobile menu when route changes
     React.useEffect(() => {
@@ -65,7 +65,7 @@ export default function Header() {
 
                                 {/* Dropdown menu for Sports Fiesta modules */}
                                 <div className="absolute left-0 mt-1 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                                    {canManageEvents(userRole) && <Link
+                                    {canViewSports(userRole) && <Link
                                         href="/admin/sports"
                                         className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700"
                                     >
@@ -245,7 +245,7 @@ export default function Header() {
                             {showFiestaMenu && <div className="px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200">
                                 🏆 Sports Fiesta
                             </div>}
-                            {canManageEvents(userRole) && <MobileNavLink to="/admin/sports" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
+                            {canViewSports(userRole) && <MobileNavLink to="/admin/sports" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>
                                 &nbsp;&nbsp;🏅 Sporting Activities
                             </MobileNavLink>}
                             {canMarshalEvents(userRole) && <MobileNavLink to="/results" currentPath={pathname} onClick={() => setIsMenuOpen(false)}>

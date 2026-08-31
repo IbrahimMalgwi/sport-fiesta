@@ -10,7 +10,7 @@
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { canManageEvents } from "@/utils/config";
+import { canViewSports } from "@/utils/config";
 
 export default function SportsManager() {
     const { userRole } = useAuth();
@@ -36,7 +36,7 @@ export default function SportsManager() {
         return () => { active = false; supabase.removeChannel(channel); };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    if (!canManageEvents(userRole)) return <p className="p-8 text-center">Only administrators can view sporting activities.</p>;
+    if (!canViewSports(userRole)) return <p className="p-8 text-center">Only Staff and Admins can view sporting activities.</p>;
 
     const groups = [];
     for (const sport of sports) {

@@ -16,12 +16,20 @@ export const APP_ROLES = Object.freeze({
     ADMIN: "admin",
 });
 export const AUTHENTICATED_ROLES = Object.freeze(Object.values(APP_ROLES));
+// canManageEvents also flags "unrestricted, cross-house" access on the
+// representatives page (see app/(staff)/representatives/page.jsx's isAdmin),
+// which is backed by an admin-only RLS check (public.is_admin() in
+// 0013_house_scoped_representatives.sql) — so it stays admin-only rather than
+// admitting Staff. The sports catalog itself is just a read-only reference
+// view (0010_fixed_sports_catalog.sql) with no admin-only write path behind
+// it, so Staff get their own, separate view permission below.
 export const canManageEvents = (role) => role === APP_ROLES.ADMIN;
+export const canViewSports = (role) => role === APP_ROLES.STAFF || canManageEvents(role);
 // Staff get the full operational toolkit — every Marshal and Counsellor
 // ability — without needing to be assigned one of those specific roles; see
 // supabase/migrations/0017_staff_full_operational_access.sql for the matching
 // RLS change (is_marshal_or_admin()/is_counsellor_or_admin() also admit
-// 'staff'). Only sports-catalog management (canManageEvents) stays admin-only.
+// 'staff').
 export const canMarshalEvents = (role) =>
     role === APP_ROLES.MARSHAL || role === APP_ROLES.STAFF || role === APP_ROLES.ADMIN;
 export const canRecordDecisions = (role) =>
