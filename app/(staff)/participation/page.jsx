@@ -75,7 +75,7 @@ export default function ParticipationLookupPage() {
         };
     }), [reps, sportById, results]);
 
-    if (!canSelectRepresentatives(userRole)) return <p className="p-8 text-center">Only Marshals, Counsellors, and Admins can look up participation.</p>;
+    if (!canSelectRepresentatives(userRole)) return <p className="p-8 text-center">Only Marshals, Counsellors, Staff, and Admins can look up participation.</p>;
 
     return (
         <div className="max-w-3xl mx-auto py-6 sm:py-8 px-3 sm:px-4 space-y-6">

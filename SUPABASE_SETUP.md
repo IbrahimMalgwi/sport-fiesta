@@ -97,6 +97,11 @@ In the Supabase dashboard, open **SQL Editor** and run, in order:
     `app_config.settings.churches` with the known church list, but only when
     it's still unset/empty, so it never overwrites an admin's edits made on
     `/admin/settings`.
+15. `supabase/migrations/0017_staff_full_operational_access.sql` — widens
+    `is_marshal_or_admin()`/`is_counsellor_or_admin()` to also admit the
+    `staff` role, so Staff get the full operational toolkit (results,
+    injuries, decisions, representative selection) alongside Marshals and
+    Counsellors. Sports-catalog management stays admin-only.
 
 (Or, with the Supabase CLI: `supabase link` then `supabase db push`.)
 

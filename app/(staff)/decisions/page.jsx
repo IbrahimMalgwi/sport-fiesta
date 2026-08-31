@@ -130,7 +130,7 @@ export default function DecisionsManager() {
         return decisions.filter((d) => d.houseKey === houseFilter);
     }, [decisions, houseFilter]);
 
-    if (!canRecordDecisions(userRole)) return <p className="p-8 text-center">Only Counsellors can record decisions for Christ.</p>;
+    if (!canRecordDecisions(userRole)) return <p className="p-8 text-center">Only Counsellors, Staff, and Admins can record decisions for Christ.</p>;
     return (
         <div className="max-w-4xl mx-auto py-6 sm:py-8 px-3 sm:px-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6">Decisions for Christ</h1>

@@ -155,7 +155,7 @@ export default function ResultsForm() {
 
     const medalEmoji = { gold: "🥇", silver: "🥈", bronze: "🥉" };
 
-    if (!canMarshalEvents(userRole)) return <p className="p-8 text-center">Only Marshals can record event results.</p>;
+    if (!canMarshalEvents(userRole)) return <p className="p-8 text-center">Only Marshals, Staff, and Admins can record event results.</p>;
     return (
         <div className="max-w-3xl mx-auto py-6 sm:py-8 px-3 sm:px-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6">Record Result</h1>

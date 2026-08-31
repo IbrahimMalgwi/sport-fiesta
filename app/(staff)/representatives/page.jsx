@@ -94,7 +94,7 @@ export default function RepresentativesPage() {
   };
   const remove = async (id) => { await supabase.from("event_representatives").delete().eq("id", id); load(); };
 
-  if (!canSelectRepresentatives(userRole)) return <p className="p-8 text-center">Only Marshals, Counsellors, and Admins can select house representatives.</p>;
+  if (!canSelectRepresentatives(userRole)) return <p className="p-8 text-center">Only Marshals, Counsellors, Staff, and Admins can select house representatives.</p>;
   if (!isAdmin && ownHouse === undefined) return <p className="p-8 text-center text-gray-500">Loading your house…</p>;
   if (!isAdmin && ownHouse === null) return <p className="p-8 text-center text-gray-500">Your staff registration isn&apos;t linked to a house yet, so representative selection isn&apos;t available. Contact an admin if this seems wrong.</p>;
 

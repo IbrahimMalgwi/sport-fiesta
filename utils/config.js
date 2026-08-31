@@ -17,13 +17,20 @@ export const APP_ROLES = Object.freeze({
 });
 export const AUTHENTICATED_ROLES = Object.freeze(Object.values(APP_ROLES));
 export const canManageEvents = (role) => role === APP_ROLES.ADMIN;
-export const canMarshalEvents = (role) => role === APP_ROLES.MARSHAL || role === APP_ROLES.ADMIN;
-export const canRecordDecisions = (role) => role === APP_ROLES.COUNSELLOR || role === APP_ROLES.ADMIN;
+// Staff get the full operational toolkit — every Marshal and Counsellor
+// ability — without needing to be assigned one of those specific roles; see
+// supabase/migrations/0017_staff_full_operational_access.sql for the matching
+// RLS change (is_marshal_or_admin()/is_counsellor_or_admin() also admit
+// 'staff'). Only sports-catalog management (canManageEvents) stays admin-only.
+export const canMarshalEvents = (role) =>
+    role === APP_ROLES.MARSHAL || role === APP_ROLES.STAFF || role === APP_ROLES.ADMIN;
+export const canRecordDecisions = (role) =>
+    role === APP_ROLES.COUNSELLOR || role === APP_ROLES.STAFF || role === APP_ROLES.ADMIN;
 // Representative selection and the participation lookup are shared by
-// Marshals and Counsellors (not just Marshals) — see
+// Marshals, Counsellors, and Staff — see
 // supabase/migrations/0013_house_scoped_representatives.sql.
 export const canSelectRepresentatives = (role) =>
-    role === APP_ROLES.MARSHAL || role === APP_ROLES.COUNSELLOR || role === APP_ROLES.ADMIN;
+    role === APP_ROLES.MARSHAL || role === APP_ROLES.COUNSELLOR || role === APP_ROLES.STAFF || role === APP_ROLES.ADMIN;
 
 // Sensible defaults used until an admin saves the config row.
 export const DEFAULT_CONFIG = {
