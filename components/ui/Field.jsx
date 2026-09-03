@@ -8,8 +8,11 @@
 // bundled into <Field> so call sites stop repeating that markup too.
 import React from "react";
 
+// text-base (16px) at every breakpoint, not just sm: — anything smaller makes
+// iOS Safari auto-zoom the page when the field is focused, which is jarring
+// on mobile and was leaving every form (not just search) feeling broken.
 const inputBase =
-    "w-full px-4 py-2.5 border rounded-lg text-sm sm:text-base transition-colors " +
+    "w-full px-4 py-2.5 border rounded-lg text-base transition-colors " +
     "focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white " +
     "disabled:opacity-50 disabled:cursor-not-allowed";
 

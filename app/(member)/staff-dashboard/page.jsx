@@ -138,7 +138,7 @@ export default function StaffDashboard() {
                     <h2 className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-white">Staff Members ({filteredStaff.length})</h2>
                     <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                         <input type="text" placeholder="Search staff..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white text-sm" />
+                            className="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white text-base" />
                         <CSVLink data={csvData.data} headers={csvData.headers} filename={"staff-registrations.csv"}
                             className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-center text-sm">Export CSV</CSVLink>
                     </div>

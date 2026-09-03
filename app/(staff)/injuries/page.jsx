@@ -215,14 +215,14 @@ export default function InjuriesManager() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow overflow-hidden">
                 <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-3 items-center justify-between">
                     <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Records ({filtered.length})</h2>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                         <select value={houseFilter} onChange={(e) => setHouseFilter(e.target.value)}
-                            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+                            className="px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
                             <option value="all">All houses</option>
                             {houses.map((h) => (<option key={h.key} value={h.key} style={{ color: h.color, fontWeight: 600 }}>{h.name}</option>))}
                         </select>
                         <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..."
-                            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+                            className="flex-1 min-w-0 px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
                     </div>
                 </div>
                 {filtered.length === 0 ? (

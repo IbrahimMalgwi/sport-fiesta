@@ -241,7 +241,7 @@ export default function RegistrationsManager() {
                         <>
                             <div className="mb-4 flex flex-col sm:flex-row sm:justify-end gap-2">
                                 <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, phone, reg no..."
-                                    className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white sm:w-64" />
+                                    className="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white sm:w-64" />
                                 <select value={houseFilter} onChange={(e) => setHouseFilter(e.target.value)}
                                     className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
                                     <option value="all">All houses</option>
@@ -325,7 +325,7 @@ export default function RegistrationsManager() {
                         <>
                             <div className="mb-4 flex flex-col sm:flex-row sm:justify-end gap-2">
                                 <input type="text" value={staffSearch} onChange={(e) => setStaffSearch(e.target.value)} placeholder="Search name, email, phone, org..."
-                                    className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white sm:w-64" />
+                                    className="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white sm:w-64" />
                             </div>
 
                             <div className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl overflow-hidden">

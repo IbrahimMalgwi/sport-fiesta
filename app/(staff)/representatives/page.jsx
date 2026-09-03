@@ -27,6 +27,9 @@ export default function RepresentativesPage() {
   const [houseKey, setHouseKey] = useState("");
   const [ownHouse, setOwnHouse] = useState(undefined); // undefined = loading, null = none found
   const [error, setError] = useState("");
+  const [candidateFilter, setCandidateFilter] = useState("");
+  const [checkedIds, setCheckedIds] = useState(() => new Set());
+  const [bulkAdding, setBulkAdding] = useState(false);
 
   const load = async () => {
     const [{ data: s }, { data: r }] = await Promise.all([
@@ -80,10 +83,31 @@ export default function RepresentativesPage() {
     if (sport?.maxAge != null && Number(p.age) > sport.maxAge) return false;
     return !selected.some((r) => r.sportId === sportId && r.personId === p.id);
   }), [registrations, houseKey, sport, sportId, selected]);
+  const filteredCandidates = useMemo(() => {
+    const q = candidateFilter.trim().toLowerCase();
+    if (!q) return candidates;
+    return candidates.filter((p) => (p.name || "").toLowerCase().includes(q));
+  }, [candidates, candidateFilter]);
   const selectedForSport = useMemo(
     () => selected.filter((r) => r.sportId === sportId && (isAdmin || r.houseKey === houseKey)),
     [selected, sportId, isAdmin, houseKey]
   );
+  // Reset the multi-select whenever the eligible pool changes underneath it
+  // (switching event/house, or a pick removing someone from `candidates`).
+  useEffect(() => {
+    setCheckedIds((prev) => {
+      const ids = new Set(candidates.map((p) => p.id));
+      const next = new Set([...prev].filter((id) => ids.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [candidates]);
+  const toggleChecked = (id) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
   const add = async (person) => {
     setError("");
     const { error: e } = await supabase.from("event_representatives").insert({
@@ -91,6 +115,26 @@ export default function RepresentativesPage() {
       edition: config.currentEdition, selectedBy: currentUser.uid,
     });
     if (e) setError(e.message); else load();
+  };
+  const addSelected = async () => {
+    const people = candidates.filter((p) => checkedIds.has(p.id));
+    if (people.length === 0) return;
+    setError("");
+    setBulkAdding(true);
+    try {
+      const rows = people.map((person) => ({
+        sportId, personId: person.id, houseKey: person.houseKey,
+        edition: config.currentEdition, selectedBy: currentUser.uid,
+      }));
+      const { error: e } = await supabase.from("event_representatives").insert(rows);
+      if (e) throw e;
+      setCheckedIds(new Set());
+      load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBulkAdding(false);
+    }
   };
   const remove = async (id) => { await supabase.from("event_representatives").delete().eq("id", id); load(); };
 
@@ -108,7 +152,7 @@ export default function RepresentativesPage() {
       </div>
       {error && <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl shadow">
-        <select className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm sm:text-base" value={sportId} onChange={e => setSportId(e.target.value)}>
+        <select className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-base" value={sportId} onChange={e => setSportId(e.target.value)}>
           <option value="">Select event</option>
           {sportGroups.map(group => (
             <optgroup key={group.name} label={group.name}>
@@ -117,12 +161,12 @@ export default function RepresentativesPage() {
           ))}
         </select>
         {isAdmin ? (
-          <select className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm sm:text-base" value={houseKey} onChange={e => setHouseKey(e.target.value)}>
+          <select className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-base" value={houseKey} onChange={e => setHouseKey(e.target.value)}>
             <option value="">All houses</option>
             {[...new Map(registrations.filter(p => p.houseKey).map(p => [p.houseKey, p.house])).entries()].map(([k, n]) => <option key={k} value={k}>{n}</option>)}
           </select>
         ) : (
-          <div className="p-3 rounded-lg border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 flex items-center flex-wrap gap-1 text-sm sm:text-base">
+          <div className="p-3 rounded-lg border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 flex items-center flex-wrap gap-1 text-base">
             Your house: <span className="font-semibold" style={{ color: ownHouse.color }}>{ownHouse.name}</span>
           </div>
         )}
@@ -130,18 +174,38 @@ export default function RepresentativesPage() {
       {sportId && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <section>
-            <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Eligible participants</h2>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <h2 className="font-semibold text-gray-900 dark:text-white">Eligible participants ({filteredCandidates.length})</h2>
+              {checkedIds.size > 0 && (
+                <Button size="sm" onClick={addSelected} disabled={bulkAdding}>
+                  {bulkAdding ? "Adding…" : `Add ${checkedIds.size} selected`}
+                </Button>
+              )}
+            </div>
+            {candidates.length > 5 && (
+              <input type="text" value={candidateFilter} onChange={(e) => setCandidateFilter(e.target.value)}
+                placeholder="Search eligible participants…"
+                className="w-full mb-2 px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+            )}
             <div className="space-y-2">
-              {candidates.map(p => (
+              {filteredCandidates.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 px-1 py-2">
+                  {candidateFilter ? "No eligible participants match that search." : "No eligible participants for this selection."}
+                </p>
+              ) : filteredCandidates.map(p => (
                 <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                  <span className="min-w-0 break-words text-sm sm:text-base text-gray-900 dark:text-white">{p.name} · {p.age} · {p.house}</span>
+                  <label className="flex items-center gap-3 min-w-0 cursor-pointer">
+                    <input type="checkbox" checked={checkedIds.has(p.id)} onChange={() => toggleChecked(p.id)}
+                      className="w-5 h-5 shrink-0 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-400" />
+                    <span className="min-w-0 break-words text-base text-gray-900 dark:text-white">{p.name} · {p.age} · {p.house}</span>
+                  </label>
                   <Button size="sm" onClick={() => add(p)} className="shrink-0">Select</Button>
                 </div>
               ))}
             </div>
           </section>
           <section>
-            <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Selected representatives</h2>
+            <h2 className="font-semibold mb-2 text-gray-900 dark:text-white">Selected representatives ({selectedForSport.length})</h2>
             <div className="space-y-2">
               {selectedForSport.map(r => {
                 const p = registrations.find(p => p.id === r.personId);

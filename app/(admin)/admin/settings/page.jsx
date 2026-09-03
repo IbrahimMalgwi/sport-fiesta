@@ -78,7 +78,7 @@ export default function SettingsManager() {
         return <LoadingScreen label="Loading settings..." />;
     }
 
-    const input = "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white text-sm sm:text-base";
+    const input = "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-white text-base";
     const labelCls = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
 
     return (
