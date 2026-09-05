@@ -102,6 +102,13 @@ In the Supabase dashboard, open **SQL Editor** and run, in order:
     `staff` role, so Staff get the full operational toolkit (results,
     injuries, decisions, representative selection) alongside Marshals and
     Counsellors. Sports-catalog management stays admin-only.
+16. `supabase/migrations/0019_results_representative_fk_set_null.sql` —
+    changes `results.representativeId`'s FK from `on delete restrict` to
+    `on delete set null`. Deleting a registration cascades to its
+    `event_representatives` row, which was blocked by `restrict` whenever a
+    result still referenced that representative; `set null` matches
+    `personId`/`sportId` on the same table and lets the registration (and its
+    representative pick) be deleted while historical results rows survive.
 
 (Or, with the Supabase CLI: `supabase link` then `supabase db push`.)
 

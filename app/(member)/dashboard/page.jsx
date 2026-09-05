@@ -11,6 +11,7 @@ import {
 import { Bar, Doughnut } from "react-chartjs-2";
 import useConfig from "@/hooks/useConfig";
 import useRegistrations, { registrantName } from "@/hooks/useRegistrations";
+import useStaffRegistrations from "@/hooks/useStaffRegistrations";
 import { resolveHouses } from "@/utils/config";
 import { getHouseKeyByName } from "@/utils/houseMapping";
 import { LoadingScreen } from "@/components/ui/Spinner";
@@ -45,13 +46,14 @@ function StatCard({ label, value, emoji, tone = "indigo" }) {
 export default function CentralDashboard() {
     const { config } = useConfig();
     const { registrations, loading } = useRegistrations();
+    const { staffRegistrations } = useStaffRegistrations();
     const houses = resolveHouses(config);
     const supabase = createClient();
 
     const [results, setResults] = useState([]);
     const [injuries, setInjuries] = useState([]);
     const [decisions, setDecisions] = useState([]);
-    const [filters, setFilters] = useState({ house: "all", role: "all", gender: "all", category: "all" });
+    const [filters, setFilters] = useState({ house: "all", role: "all", gender: "all", category: "all", edition: "all" });
 
     useEffect(() => {
         let active = true;
@@ -71,18 +73,21 @@ export default function CentralDashboard() {
 
     const roles = config.registrantRoles;
     const previousEditions = config.previousEditions;
+    const allEditions = useMemo(() => [config.currentEdition, ...previousEditions], [config.currentEdition, previousEditions]);
     const houseName = (key) => houses.find((h) => h.key === key)?.shortName || houses.find((h) => h.key === key)?.name || key;
 
     const filteredRegs = useMemo(() => registrations.filter((r) => {
         if (filters.house !== "all" && regHouseKey(r) !== filters.house) return false;
         if (filters.role !== "all" && (r.role || "Participant") !== filters.role) return false;
         if (filters.gender !== "all" && r.sex !== filters.gender) return false;
+        if (filters.edition !== "all" && r.edition !== filters.edition) return false;
         return true;
     }), [registrations, filters]);
 
     const filteredResults = useMemo(() => results.filter((r) => {
         if (filters.house !== "all" && r.houseKey !== filters.house) return false;
         if (filters.category !== "all" && r.category !== filters.category) return false;
+        if (filters.edition !== "all" && r.edition !== filters.edition) return false;
         return true;
     }), [results, filters]);
 
@@ -152,12 +157,14 @@ export default function CentralDashboard() {
     const regCsv = useMemo(() => ({
         headers: [
             { label: "Reg No", key: "regNo" }, { label: "Name", key: "name" }, { label: "Age", key: "age" }, { label: "Gender", key: "sex" },
-            { label: "Role", key: "role" }, { label: "House", key: "house" },
+            { label: "Role", key: "role" }, { label: "Phone", key: "phone" }, { label: "Email", key: "email" }, { label: "Church", key: "church" },
+            { label: "House", key: "house" }, { label: "Edition", key: "edition" },
             { label: "Total fiestas attended", key: "totalFiestas" }, { label: "Editions", key: "editions" },
         ],
         data: filteredRegs.map((r) => ({
             regNo: r.reg_no || "", name: registrantName(r), age: r.age || "", sex: r.sex || "", role: r.role || "Participant",
-            house: r.house || "Unassigned",
+            phone: r.phone || "", email: r.email || "", church: r.church || "",
+            house: r.house || "Unassigned", edition: r.edition || "",
             totalFiestas: prevCount(r) + 1, editions: (r.fiestaAttendance || []).join(", "),
         })),
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -170,6 +177,32 @@ export default function CentralDashboard() {
         ],
         data: houseScores,
     }), [houseScores]);
+
+    const resultsCsv = useMemo(() => ({
+        headers: [
+            { label: "Activity", key: "sportName" }, { label: "Category", key: "category" }, { label: "House", key: "house" },
+            { label: "Medal", key: "medal" }, { label: "Points", key: "points" }, { label: "Edition", key: "edition" },
+            { label: "Recorded at", key: "recordedAt" },
+        ],
+        data: filteredResults.map((r) => ({
+            sportName: r.sportName || "", category: r.category || "", house: r.house || "",
+            medal: r.medal || "", points: r.points || 0, edition: r.edition || "",
+            recordedAt: r.created_at ? new Date(r.created_at).toLocaleString() : "",
+        })),
+    }), [filteredResults]);
+
+    const staffCsv = useMemo(() => ({
+        headers: [
+            { label: "Name", key: "name" }, { label: "Designation", key: "designation" }, { label: "Phone", key: "phone" },
+            { label: "Email", key: "email" }, { label: "Organization", key: "organization" }, { label: "House", key: "house" },
+            { label: "Registered at", key: "registeredAt" },
+        ],
+        data: staffRegistrations.map((s) => ({
+            name: s.name || "", designation: s.finalDesignation || s.designation || "", phone: s.phone || "",
+            email: s.email || "", organization: s.organization || "", house: s.house || "Unassigned",
+            registeredAt: s.created_at ? new Date(s.created_at).toLocaleString() : "",
+        })),
+    }), [staffRegistrations]);
 
     const chartText = "#9ca3af";
     const barOptions = {
@@ -231,9 +264,18 @@ export default function CentralDashboard() {
                     <option value="Female">Female</option>
                     <option value="Mixed">Mixed</option>
                 </select>
-                <div className="w-full sm:w-auto sm:ml-auto flex gap-2">
-                    <CSVLink data={regCsv.data} headers={regCsv.headers} filename="registrations.csv"
-                        className="flex-1 sm:flex-none text-center bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-indigo-700">Export registrations</CSVLink>
+                <select value={filters.edition} onChange={(e) => setFilters({ ...filters, edition: e.target.value })}
+                    className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" title="Fiesta edition (applies to participants and results exports)">
+                    <option value="all">All editions</option>
+                    {allEditions.map((e) => <option key={e} value={e}>Sports Fiesta {e}</option>)}
+                </select>
+                <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap gap-2">
+                    <CSVLink data={regCsv.data} headers={regCsv.headers} filename="participants.csv"
+                        className="flex-1 sm:flex-none text-center bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-indigo-700">Export participants</CSVLink>
+                    <CSVLink data={staffCsv.data} headers={staffCsv.headers} filename="marshals-staff.csv"
+                        className="flex-1 sm:flex-none text-center bg-purple-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-purple-700">Export marshals/staff</CSVLink>
+                    <CSVLink data={resultsCsv.data} headers={resultsCsv.headers} filename="results.csv"
+                        className="flex-1 sm:flex-none text-center bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-emerald-700">Export results</CSVLink>
                     <CSVLink data={standingsCsv.data} headers={standingsCsv.headers} filename="house-standings.csv"
                         className="flex-1 sm:flex-none text-center bg-gray-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-gray-700">Export standings</CSVLink>
                 </div>
